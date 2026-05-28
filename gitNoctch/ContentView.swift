@@ -13,6 +13,8 @@ struct ContentView: View {
     
     @State private var user: User? = nil
     @State private var notifications: [GithubNotification] = []
+    @State private var repos: [Repo] = []
+
     
     var body: some View {
         VStack {
@@ -37,10 +39,10 @@ struct ContentView: View {
                     Link("Voir le profil", destination: htmlURL)
                 }
                 Text("\(notifications.count) notifications")
-                    .task(id: authService.isAuthenticated) {
-                        guard authService.isAuthenticated else { return }
-                        notifications = await gitHubService.fetchNotifications() ?? []
-                    }
+
+                ForEach(repos, id: \.id) { repo in
+                    Text(repo.name)
+                }
                 Button("Logout") {
                     authService.logout()
                     user = nil
@@ -55,6 +57,8 @@ struct ContentView: View {
         .task(id: authService.isAuthenticated) {
             guard authService.isAuthenticated else { return }
             user = await gitHubService.fetchUser()
+            notifications = await gitHubService.fetchNotifications() ?? []
+            repos = await gitHubService.fetchUserRepos(query: "easyfrai") ?? []
         }
     }
 }

@@ -61,4 +61,28 @@ class GitHubService {
         }
         return nil
     }
+    
+    // MARK: - Repo
+    func fetchUserRepos(query: String? = nil) async -> [Repo]? {
+        let url = baseURL.appendingPathComponent("user/repos")
+        
+        var request = URLRequest(url: url)
+        guard let token = authService.token else { return nil }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let repos = try decoder.decode([Repo].self, from: data)
+            
+            if let query = query {
+                return repos.filter { $0.name.localizedCaseInsensitiveContains(query) }
+            }
+            return repos
+        } catch {
+            print(error)
+        }
+        return nil
+    }
 }
