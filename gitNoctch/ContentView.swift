@@ -65,17 +65,31 @@ struct ContentView: View {
     
     // MARK: - Main
     var mainView: some View {
-        HStack(alignment: .top, spacing: 0) {
-            userBlock
+        ZStack(alignment: .leading) {
+            // Vue normale — user + activity
+            HStack(alignment: .top, spacing: 0) {
+                userBlock
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                
+                Rectangle()
+                    .fill(.white.opacity(0.07))
+                    .frame(width: 1)
+                    .padding(.vertical, 16)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                
+                rightBlock
+            }
+            .opacity(isSearching ? 0 : 1)
+            .offset(x: isSearching ? -30 : 0)
             
-            Rectangle()
-                .fill(.white.opacity(0.07))
-                .frame(width: 1)
-                .padding(.vertical, 16)
-            
-            rightBlock
+            // Vue recherche — plein écran
+            if isSearching {
+                searchFullView
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
         .frame(minWidth: 520, minHeight: 160)
+        .animation(.spring(duration: 0.35), value: isSearching)
         .task(id: authService.isAuthenticated) {
             guard authService.isAuthenticated else { return }
             isLoading = true
@@ -222,9 +236,9 @@ struct ContentView: View {
                 .clipShape(Capsule())
                 .onTapGesture {
                     if !isSearching {
-                        withAnimation(.spring(duration: 0.3)) {
-                            isSearching = true
-                        }
+                            withAnimation(.spring(duration: 0.35)) {
+                                isSearching = true
+                            }
                     }
                 }
             }
@@ -398,6 +412,56 @@ struct ContentView: View {
             .font(.system(size: 11, design: .rounded))
             .foregroundStyle(.white.opacity(0.2))
     }
+    var searchFullView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Header search
+            HStack {
+                sectionLabel("Search", icon: "magnifyingglass")
+                
+                Spacer()
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.9))
+                    
+                    TextField("Search repos...", text: $searchQuery)
+                        .font(.system(size: 11, design: .rounded))
+                        .foregroundStyle(.white)
+                        .textFieldStyle(.plain)
+                        .frame(width: 160)
+                        .onChange(of: searchQuery) { _, newValue in
+                            Task {
+                                searchResults = newValue.isEmpty ? [] : (await gitHubService.fetchUserRepos(query: newValue) ?? [])
+                            }
+                        }
+                    
+                    Button {
+                        withAnimation(.spring(duration: 0.3)) {
+                            isSearching = false
+                            searchQuery = ""
+                            searchResults = []
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.07))
+                .clipShape(Capsule())
+            }
+            
+            // Résultats
+            searchResultsView
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 #Preview {
@@ -407,3 +471,4 @@ struct ContentView: View {
         .background(.black)
         .frame(width: 520, height: 170)
 }
+
