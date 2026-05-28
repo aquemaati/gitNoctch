@@ -18,9 +18,9 @@ class GitHubService {
         self.authService = authService
     }
     
-   func fetchUser() async -> User? {
-        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
-       components.path.append("/user")
+    // MARK: - User
+    
+    func fetchUser() async -> User? {
        
        let url = baseURL.appendingPathComponent("user")
 
@@ -39,5 +39,26 @@ class GitHubService {
        
        return nil
     }
+    
+    // MARK: - Notification
+    
+    func fetchNotifications() async -> [GithubNotification]? {
 
+        let url = baseURL.appendingPathComponent("notifications")
+        
+        var request = URLRequest(url: url)
+        guard let token = authService.token else { return nil }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let notifications = try decoder.decode([GithubNotification].self, from: data)
+            return notifications
+        } catch {
+            print(error)
+        }
+        return nil
+    }
 }

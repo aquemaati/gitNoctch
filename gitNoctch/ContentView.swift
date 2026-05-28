@@ -10,7 +10,9 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AuthService.self) var authService
     @Environment(GitHubService.self) var gitHubService
+    
     @State private var user: User? = nil
+    @State private var notifications: [GithubNotification] = []
     
     var body: some View {
         VStack {
@@ -34,6 +36,11 @@ struct ContentView: View {
                 if let htmlURL = user?.htmlURL {
                     Link("Voir le profil", destination: htmlURL)
                 }
+                Text("\(notifications.count) notifications")
+                    .task(id: authService.isAuthenticated) {
+                        guard authService.isAuthenticated else { return }
+                        notifications = await gitHubService.fetchNotifications() ?? []
+                    }
                 Button("Logout") {
                     authService.logout()
                     user = nil
