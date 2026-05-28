@@ -40,6 +40,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let token = authService.getToken() {
             authService.token = token
             authService.isAuthenticated = true
+            Task {
+                    authService.currentUser = await gitHubService?.fetchUser()
+                }
         }
         let notch = DynamicNotch<
             NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView
@@ -71,6 +74,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
         Task {
             await authService.handleCallback(code: code)
+            guard let gitHubService = gitHubService else { return }
+            authService.currentUser = await gitHubService.fetchUser()
+
         }
     }
 }

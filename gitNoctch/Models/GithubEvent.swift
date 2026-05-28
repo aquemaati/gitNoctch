@@ -1,0 +1,65 @@
+import Foundation
+
+struct GithubEvent: Codable {
+    let id: String
+    let type: String
+    let createdAt: Date
+    let repo: EventRepo
+    let payload: Payload?
+    
+    struct EventRepo: Codable {
+        let name: String
+    }
+    
+    struct Payload: Codable {
+        let ref: String?
+        let head: String?
+        
+        func shortHead() -> String? {
+            guard let head = head else { return nil }
+            return String(head.prefix(7))
+        }
+        
+        func branchName() -> String? {
+            ref?.replacingOccurrences(of: "refs/heads/", with: "")
+        }
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case createdAt = "created_at"
+        case repo
+        case payload
+    }
+    
+    func icon() -> String {
+        switch type {
+        case "PushEvent": return "arrow.up.circle"
+        case "PullRequestEvent": return "arrow.triangle.pull"
+        case "IssuesEvent": return "exclamationmark.circle"
+        case "IssueCommentEvent": return "bubble.left"
+        case "CreateEvent": return "plus.circle"
+        case "DeleteEvent": return "minus.circle"
+        case "ForkEvent": return "tuningfork"
+        case "WatchEvent": return "star"
+        default: return "circle"
+        }
+    }
+    
+    func description() -> String {
+        switch type {
+        case "PushEvent":
+            let branch = payload?.branchName() ?? "main"
+            let sha = payload?.shortHead() ?? ""
+            return "\(sha) sur \(branch) — \(repo.name)"
+        case "PullRequestEvent": return "PR sur \(repo.name)"
+        case "IssuesEvent": return "Issue sur \(repo.name)"
+        case "IssueCommentEvent": return "Commentaire sur \(repo.name)"
+        case "CreateEvent": return "Création sur \(repo.name)"
+        case "ForkEvent": return "Fork de \(repo.name)"
+        case "WatchEvent": return "Watch \(repo.name)"
+        default: return "Activité sur \(repo.name)"
+        }
+    }
+}

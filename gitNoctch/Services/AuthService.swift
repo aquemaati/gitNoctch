@@ -17,6 +17,9 @@ class AuthService {
     let clientId: String = Secrets.clientId
     let clientSecret: String = Secrets.clientSecret
     let redirectUri: String = "gitnotch://callback"
+    
+    var currentUser: User? = nil
+
 
     func startOAuth() {
         var components = URLComponents(

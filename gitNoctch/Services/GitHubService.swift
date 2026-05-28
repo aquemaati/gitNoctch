@@ -85,4 +85,27 @@ class GitHubService {
         }
         return nil
     }
+    
+    // MARK: - GithubEvent
+    func fetchEvents() async -> [GithubEvent]? {
+        guard let login = authService.currentUser?.login else { return nil }
+        
+        let url = baseURL.appendingPathComponent("users/\(login)/events")
+        
+        var request = URLRequest(url: url)
+        guard let token = authService.token else { return nil }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: request)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            print(String(data: data, encoding: .utf8) ?? "no data")
+            return try decoder.decode([GithubEvent].self, from: data)
+        } catch {
+            print(error)
+        }
+        return nil
+    }
+    
 }

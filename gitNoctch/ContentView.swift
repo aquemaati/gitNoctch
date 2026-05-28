@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var user: User? = nil
     @State private var notifications: [GithubNotification] = []
     @State private var repos: [Repo] = []
+    @State private var events: [GithubEvent] = []
 
     
     var body: some View {
@@ -43,6 +44,13 @@ struct ContentView: View {
                 ForEach(repos, id: \.id) { repo in
                     Text(repo.name)
                 }
+                ForEach(events, id: \.id) { event in
+                    HStack {
+                        Image(systemName: event.icon())
+                        Text(event.description())
+                        
+                    }
+                }
                 Button("Logout") {
                     authService.logout()
                     user = nil
@@ -58,7 +66,8 @@ struct ContentView: View {
             guard authService.isAuthenticated else { return }
             user = await gitHubService.fetchUser()
             notifications = await gitHubService.fetchNotifications() ?? []
-            repos = await gitHubService.fetchUserRepos(query: "easyfrai") ?? []
+//            repos = await gitHubService.fetchUserRepos(query: "easyfrai") ?? []
+            events = await gitHubService.fetchEvents() ?? []
         }
     }
 }
