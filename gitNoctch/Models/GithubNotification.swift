@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct GithubNotification: Codable{
     let id: String
@@ -41,6 +42,17 @@ struct GithubNotification: Codable{
         case "security_alert": return "shield.fill"
         case "state_change": return "circle.fill"
         default: return "bell"
+        }
+    }
+    func iconColor() -> Color {
+        switch reason {
+        case "review_requested": return .orange
+        case "mention": return .blue
+        case "assign": return .green
+        case "security_alert": return .red
+        case "push": return .green
+        case "state_change": return .purple
+        default: return .white.opacity(0.5)
         }
     }
 }

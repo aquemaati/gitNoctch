@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 struct GithubEvent: Codable {
     let id: String
@@ -60,6 +61,19 @@ struct GithubEvent: Codable {
         case "ForkEvent": return "Fork de \(repo.name)"
         case "WatchEvent": return "Watch \(repo.name)"
         default: return "Activité sur \(repo.name)"
+        }
+    }
+    func iconColor() -> Color {
+        switch type {
+        case "PushEvent": return .green
+        case "PullRequestEvent": return .purple
+        case "IssuesEvent": return .orange
+        case "IssueCommentEvent": return .blue
+        case "CreateEvent": return .teal
+        case "DeleteEvent": return .red
+        case "ForkEvent": return .yellow
+        case "WatchEvent": return .pink
+        default: return .white.opacity(0.5)
         }
     }
 }

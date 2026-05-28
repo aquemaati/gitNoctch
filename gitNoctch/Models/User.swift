@@ -8,14 +8,17 @@
 import Foundation
 
 struct User: Codable {
-
     let login: String
     let avatarUrl: URL
     let htmlURL: URL
-
+    let publicRepos: Int
+    let followers: Int
+    
     enum CodingKeys: String, CodingKey {
         case login
         case avatarUrl = "avatar_url"
         case htmlURL = "html_url"
+        case publicRepos = "public_repos"
+        case followers
     }
 }
