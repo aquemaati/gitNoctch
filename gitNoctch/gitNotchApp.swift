@@ -26,11 +26,15 @@ struct GitNotchApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     var authService = AuthService()
+    var gitHubService: GitHubService?
     
     var notch: DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>?
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        
+        gitHubService = GitHubService(authService: authService)
+
         
         //récupération du token
         if let token = authService.getToken() {
@@ -41,7 +45,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView
         >(
             style: .auto,
-            expanded: { NotchContentWrapper(authService: self.authService) },
+            expanded: { NotchContentWrapper(authService: self.authService, gitHubService: self.gitHubService!) },
             compactLeading: { GitNotchCompactLeadingView() },
             compactTrailing: { GitNotchCompactTrailingView() }
         )
@@ -73,8 +77,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct NotchContentWrapper: View {
     let authService: AuthService
+    let gitHubService: GitHubService
+
     var body: some View {
         ContentView()
             .environment(authService)
+            .environment(gitHubService)
     }
 }
