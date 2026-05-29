@@ -89,23 +89,32 @@ class GitHubService {
     // MARK: - GithubEvent
     func fetchEvents() async -> [GithubEvent]? {
         guard let login = authService.currentUser?.login else { return nil }
+        guard let token = authService.token else { return nil }
         
         let url = baseURL.appendingPathComponent("users/\(login)/events")
         
-        var request = URLRequest(url: url)
-        guard let token = authService.token else { return nil }
+        // 1. Utiliser reloadIgnoringLocalCacheData pour éviter les données périmées
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
+        
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
+        // 2. Ajouter un User-Agent (requis par GitHub)
+        request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                print("Erreur HTTP")
+                return nil
+            }
+            
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            print(String(data: data, encoding: .utf8) ?? "no data")
             return try decoder.decode([GithubEvent].self, from: data)
         } catch {
-            print(error)
+            print("Erreur lors du décodage ou du réseau : \(error)")
+            return nil
         }
-        return nil
     }
-    
 }

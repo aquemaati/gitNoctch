@@ -6,10 +6,11 @@
 //
 
 import Foundation
+//internal import Combine
 
 @Observable
 class GitHubViewModel {
-    // data
+    
     var notifications: [GithubNotification] = []
     var events: [GithubEvent] = []
     var repos: [Repo] = []
@@ -28,7 +29,7 @@ class GitHubViewModel {
         pollingTask = Task {
             while !Task.isCancelled {
                 await fetchAll()
-                try? await Task.sleep(for: .seconds(60))
+                try? await Task.sleep(for: .seconds(20))
             }
         }
     }
@@ -39,17 +40,29 @@ class GitHubViewModel {
         }
 
     func fetchAll() async {
-        print("fetchAll called — token: \(gitHubService.authService.token ?? "nil")")
+        print("fetchAll called")
         isLoading = true
         async let n = gitHubService.fetchNotifications()
         async let e = gitHubService.fetchEvents()
-        async let r = gitHubService.fetchUserRepos()
-        notifications = await n ?? []
-        events = await e ?? []
-        repos = await r ?? []
-        isLoading = false
-
+        let fetchedNotifs = await n ?? []
+        let fetchedEvents = await e ?? []
+        
+        fetchedEvents.indices.forEach { index in
+//            print(fetchedEvents[index].repo.name)
+//            print(fetchedEvents[index].type)
+//            print(fetchedEvents[index].createdAt)
+            print("EVENT: \(fetchedEvents[index].repo.name), \(fetchedEvents[index].type), \(fetchedEvents[index].createdAt)")
+        }
+        print("fetchAll done — events: \(fetchedEvents.count), notifs: \(fetchedNotifs.count)")
+        print("------------------------------------------------------------------------")
+        await MainActor.run {
+            self.notifications = fetchedNotifs
+            self.events = fetchedEvents
+            self.isLoading = false
+        }
+        print("fetchAll MainActor done — viewModel.events: \(self.events.count)")
     }
+    
     func searchRepos(query: String) async -> [Repo] {
         return await gitHubService.fetchUserRepos(query: query) ?? []
     }

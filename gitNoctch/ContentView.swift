@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AuthService.self) var authService
     @Environment(GitHubViewModel.self) var gitHubViewModel
-    
+
     @State private var isSearching = false
     @State private var searchQuery = ""
     @State private var searchResults: [Repo] = []
@@ -410,14 +410,14 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    let authService = AuthService()
-    let gitHubService = GitHubService(authService: authService)
-    let gitHubViewModel = GitHubViewModel(gitHubService: gitHubService)
-    
-    ContentView()
-        .environment(authService)
-        .environment(gitHubViewModel)
-        .background(.black)
-        .frame(width: 520, height: 170)
-}
+//#Preview {
+//    let authService = AuthService()
+//    let gitHubService = GitHubService(authService: authService)
+//    let gitHubViewModel = GitHubViewModel(gitHubService: gitHubService)
+//    
+//    ContentView()
+//        .environment(authService)
+//        .environment(gitHubViewModel)
+//        .background(.black)
+//        .frame(width: 520, height: 170)
+//}
