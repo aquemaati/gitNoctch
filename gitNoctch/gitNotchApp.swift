@@ -26,29 +26,42 @@ struct GitNotchApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     var authService = AuthService()
-    var gitHubService: GitHubService?
-    
-    var notch: DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>?
 
+    lazy var gitHubService: GitHubService = GitHubService(
+        authService: authService
+    )
+    lazy var gitHubViewModel: GitHubViewModel = GitHubViewModel(
+        gitHubService: gitHubService
+    )
+
+    var notch:
+        DynamicNotch<
+            NotchContentWrapper, GitNotchCompactLeadingView,
+            GitNotchCompactTrailingView
+        >?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        
-        gitHubService = GitHubService(authService: authService)
 
-        
         //récupération du token
         if let token = authService.getToken() {
             authService.token = token
             authService.isAuthenticated = true
             Task {
-                    authService.currentUser = await gitHubService?.fetchUser()
-                }
+                authService.currentUser = await gitHubService.fetchUser()
+            }
+            gitHubViewModel.startPolling()
         }
         let notch = DynamicNotch<
-            NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView
+            NotchContentWrapper, GitNotchCompactLeadingView,
+            GitNotchCompactTrailingView
         >(
             style: .auto,
-            expanded: { NotchContentWrapper(authService: self.authService, gitHubService: self.gitHubService!) },
+            expanded: {
+                NotchContentWrapper(
+                    authService: self.authService,
+                    gitHubViewModel: self.gitHubViewModel
+                )
+            },
             compactLeading: { GitNotchCompactLeadingView() },
             compactTrailing: { GitNotchCompactTrailingView() }
         )
@@ -74,20 +87,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         else { return }
         Task {
             await authService.handleCallback(code: code)
-            guard let gitHubService = gitHubService else { return }
             authService.currentUser = await gitHubService.fetchUser()
+            gitHubViewModel.startPolling()
 
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        gitHubViewModel.stopPolling()
     }
 }
 
 struct NotchContentWrapper: View {
     let authService: AuthService
-    let gitHubService: GitHubService
+    let gitHubViewModel: GitHubViewModel
 
     var body: some View {
         ContentView()
             .environment(authService)
-            .environment(gitHubService)
+            .environment(gitHubViewModel)
     }
 }

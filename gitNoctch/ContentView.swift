@@ -106,7 +106,7 @@ struct ContentView: View {
         VStack(alignment: .center, spacing: 12) {
             
             // Horloge
-//            TimeView()
+            TimeView()
             KpiView(authService: authService)
             
             // Avatar
