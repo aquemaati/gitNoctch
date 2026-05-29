@@ -9,17 +9,14 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AuthService.self) var authService
-    @Environment(GitHubService.self) var gitHubService
+    @Environment(GitHubViewModel.self) var gitHubViewModel
     
-    @State private var events: [GithubEvent] = []
-    @State private var notifications: [GithubNotification] = []
-    @State private var isLoading = true
     @State private var isSearching = false
     @State private var searchQuery = ""
     @State private var searchResults: [Repo] = []
     
     var unreadNotifs: [GithubNotification] {
-        notifications.filter(\.unread)
+        gitHubViewModel.notifications.filter(\.unread)
     }
     
     var body: some View {
@@ -66,7 +63,6 @@ struct ContentView: View {
     // MARK: - Main
     var mainView: some View {
         ZStack(alignment: .leading) {
-            // Vue normale — user + activity
             HStack(alignment: .top, spacing: 0) {
                 userBlock
                     .transition(.move(edge: .leading).combined(with: .opacity))
@@ -82,7 +78,6 @@ struct ContentView: View {
             .opacity(isSearching ? 0 : 1)
             .offset(x: isSearching ? -30 : 0)
             
-            // Vue recherche — plein écran
             if isSearching {
                 searchFullView
                     .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -90,26 +85,13 @@ struct ContentView: View {
         }
         .frame(minWidth: 520, minHeight: 160)
         .animation(.spring(duration: 0.35), value: isSearching)
-        .task(id: authService.isAuthenticated) {
-            guard authService.isAuthenticated else { return }
-            isLoading = true
-            async let e = gitHubService.fetchEvents()
-            async let n = gitHubService.fetchNotifications()
-            events = await e ?? []
-            notifications = await n ?? []
-            isLoading = false
-        }
     }
     
     // MARK: - User Block
     var userBlock: some View {
         VStack(alignment: .center, spacing: 12) {
-            
-            // Horloge
-            TimeView()
             KpiView(authService: authService)
             
-            // Avatar
             if let avatarUrl = authService.currentUser?.avatarUrl {
                 AsyncImage(url: avatarUrl) { image in
                     image
@@ -125,12 +107,10 @@ struct ContentView: View {
                 }
             }
             
-            // Login
             Text(authService.currentUser?.login ?? "...")
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white)
             
-            // Boutons
             VStack(spacing: 4) {
                 Button {
                     if let url = authService.currentUser?.htmlURL {
@@ -153,6 +133,7 @@ struct ContentView: View {
                 
                 Button {
                     authService.logout()
+                    gitHubViewModel.stopPolling()
                 } label: {
                     Text("logout")
                         .font(.system(size: 8, design: .rounded))
@@ -170,7 +151,6 @@ struct ContentView: View {
     var rightBlock: some View {
         VStack(alignment: .leading, spacing: 14) {
             
-            // Notifications si il y en a
             if !unreadNotifs.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     sectionLabel("Notifications", icon: "bell.fill", badge: unreadNotifs.count)
@@ -192,84 +172,46 @@ struct ContentView: View {
                     .frame(height: 1)
             }
             
-            // Header Activity + loupe
             HStack {
-                sectionLabel(isSearching ? "Search" : "Activity", icon: isSearching ? "magnifyingglass" : "bolt.fill")
+                sectionLabel("Activity", icon: "bolt.fill")
                 
                 Spacer()
                 
-                // Search pill
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 10))
-                        .foregroundStyle(.white.opacity(isSearching ? 0.9 : 0.4))
-                    
-                    if isSearching {
-                        TextField("Search repos...", text: $searchQuery)
-                            .font(.system(size: 11, design: .rounded))
-                            .foregroundStyle(.white)
-                            .textFieldStyle(.plain)
-                            .frame(width: 120)
-                            .onChange(of: searchQuery) { _, newValue in
-                                Task {
-                                    searchResults = newValue.isEmpty ? [] : (await gitHubService.fetchUserRepos(query: newValue) ?? [])
-                                }
-                            }
-                        
-                        Button {
-                            withAnimation(.spring(duration: 0.3)) {
-                                isSearching = false
-                                searchQuery = ""
-                                searchResults = []
-                            }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.white.opacity(0.4))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                        .foregroundStyle(.white.opacity(0.4))
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
                 .background(.white.opacity(0.07))
                 .clipShape(Capsule())
                 .onTapGesture {
-                    if !isSearching {
-                            withAnimation(.spring(duration: 0.35)) {
-                                isSearching = true
-                            }
+                    withAnimation(.spring(duration: 0.35)) {
+                        isSearching = true
                     }
                 }
             }
             
-            // Contenu — Activity ou Search results
-            if isSearching {
-                searchResultsView
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-            } else {
-                activityView
-                    .transition(.opacity.combined(with: .move(edge: .leading)))
-            }
+            activityView
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.spring(duration: 0.35), value: isSearching)
         .animation(.spring(duration: 0.4), value: unreadNotifs.isEmpty)
     }
     
     // MARK: - Activity View
     var activityView: some View {
         Group {
-            if isLoading {
+            if gitHubViewModel.isLoading {
                 loadingView
-            } else if events.isEmpty {
+            } else if gitHubViewModel.events.isEmpty {
                 ghostText("nothing yet")
             } else {
                 let maxEvents = unreadNotifs.isEmpty ? 4 : 3
                 VStack(alignment: .leading, spacing: 8) {
-                    ForEach(events.prefix(maxEvents), id: \.id) { event in
+                    ForEach(gitHubViewModel.events.prefix(maxEvents), id: \.id) { event in
                         Button {
                             NSWorkspace.shared.open(
                                 URL(string: "https://github.com/\(event.repo.name)")!
@@ -325,6 +267,56 @@ struct ContentView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Search Full View
+    var searchFullView: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                sectionLabel("Search", icon: "magnifyingglass")
+                
+                Spacer()
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.9))
+                    
+                    TextField("Search repos...", text: $searchQuery)
+                        .font(.system(size: 11, design: .rounded))
+                        .foregroundStyle(.white)
+                        .textFieldStyle(.plain)
+                        .frame(width: 160)
+                        .onChange(of: searchQuery) { _, newValue in
+                            Task {
+                                searchResults = await gitHubViewModel.searchRepos(query: newValue)
+                            }
+                        }
+                    
+                    Button {
+                        withAnimation(.spring(duration: 0.3)) {
+                            isSearching = false
+                            searchQuery = ""
+                            searchResults = []
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.white.opacity(0.07))
+                .clipShape(Capsule())
+            }
+            
+            searchResultsView
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 18)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
     
     // MARK: - Rows
@@ -412,63 +404,16 @@ struct ContentView: View {
             .font(.system(size: 11, design: .rounded))
             .foregroundStyle(.white.opacity(0.2))
     }
-    var searchFullView: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Header search
-            HStack {
-                sectionLabel("Search", icon: "magnifyingglass")
-                
-                Spacer()
-                
-                HStack(spacing: 6) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.white.opacity(0.9))
-                    
-                    TextField("Search repos...", text: $searchQuery)
-                        .font(.system(size: 11, design: .rounded))
-                        .foregroundStyle(.white)
-                        .textFieldStyle(.plain)
-                        .frame(width: 160)
-                        .onChange(of: searchQuery) { _, newValue in
-                            Task {
-                                searchResults = newValue.isEmpty ? [] : (await gitHubService.fetchUserRepos(query: newValue) ?? [])
-                            }
-                        }
-                    
-                    Button {
-                        withAnimation(.spring(duration: 0.3)) {
-                            isSearching = false
-                            searchQuery = ""
-                            searchResults = []
-                        }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.white.opacity(0.4))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(.white.opacity(0.07))
-                .clipShape(Capsule())
-            }
-            
-            // Résultats
-            searchResultsView
-        }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 }
 
 #Preview {
+    let authService = AuthService()
+    let gitHubService = GitHubService(authService: authService)
+    let gitHubViewModel = GitHubViewModel(gitHubService: gitHubService)
+    
     ContentView()
-        .environment(AuthService())
-        .environment(GitHubService(authService: AuthService()))
+        .environment(authService)
+        .environment(gitHubViewModel)
         .background(.black)
         .frame(width: 520, height: 170)
 }
-

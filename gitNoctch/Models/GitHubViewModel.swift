@@ -26,6 +26,7 @@ class GitHubViewModel {
     func startPolling() {
         pollingTask?.cancel()
         pollingTask = Task {
+            await fetchAll()
             while !Task.isCancelled {
                 await fetchAll()
                 try? await Task.sleep(for: .seconds(60))
@@ -39,6 +40,7 @@ class GitHubViewModel {
         }
 
     func fetchAll() async {
+        print("fetchAll called — token: \(gitHubService.authService.token ?? "nil")")
         isLoading = true
         async let n = gitHubService.fetchNotifications()
         async let e = gitHubService.fetchEvents()
@@ -48,5 +50,8 @@ class GitHubViewModel {
         repos = await r ?? []
         isLoading = false
 
+    }
+    func searchRepos(query: String) async -> [Repo] {
+        return await gitHubService.fetchUserRepos(query: query) ?? []
     }
 }
