@@ -156,8 +156,8 @@ struct ContentView: View {
                     sectionLabel("Notifications", icon: "bell.fill", badge: unreadNotifs.count)
                     ForEach(unreadNotifs.prefix(2), id: \.id) { notif in
                         Button {
-                            if let url = URL(string: notif.subject.url) {
-                                NSWorkspace.shared.open(url)
+                            Task {
+                                await gitHubViewModel.openNotification(notif)
                             }
                         } label: {
                             notifRow(notif)

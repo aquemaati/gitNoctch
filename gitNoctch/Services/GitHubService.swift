@@ -43,21 +43,48 @@ class GitHubService {
     // MARK: - Notification
     
     func fetchNotifications() async -> [GithubNotification]? {
-
-        let url = baseURL.appendingPathComponent("notifications")
-        
-        var request = URLRequest(url: url)
         guard let token = authService.token else { return nil }
+        
+        let url = baseURL.appendingPathComponent("notifications")
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
         
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                print("Erreur HTTP notifications")
+                return nil
+            }
+            
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            let notifications = try decoder.decode([GithubNotification].self, from: data)
-            return notifications
+            return try decoder.decode([GithubNotification].self, from: data)
         } catch {
-            print(error)
+            print("Erreur notifications : \(error)")
+        }
+        return nil
+    }
+    
+    func fetchNotificationHtmlUrl(_ apiUrl: String) async -> String? {
+        guard let token = authService.token else { return nil }
+        guard let url = URL(string: apiUrl) else { return nil }
+        
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return nil }
+            
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let htmlUrl = json["html_url"] as? String {
+                return htmlUrl
+            }
+        } catch {
+            print("Erreur fetchNotificationHtmlUrl: \(error)")
         }
         return nil
     }

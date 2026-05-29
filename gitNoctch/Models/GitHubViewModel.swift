@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 //internal import Combine
 
 @Observable
@@ -48,13 +49,14 @@ class GitHubViewModel {
         let fetchedEvents = await e ?? []
         
         fetchedEvents.indices.forEach { index in
-//            print(fetchedEvents[index].repo.name)
-//            print(fetchedEvents[index].type)
-//            print(fetchedEvents[index].createdAt)
             print("EVENT: \(fetchedEvents[index].repo.name), \(fetchedEvents[index].type), \(fetchedEvents[index].createdAt)")
         }
         print("fetchAll done — events: \(fetchedEvents.count), notifs: \(fetchedNotifs.count)")
         print("------------------------------------------------------------------------")
+        
+        fetchedNotifs.forEach { notification in
+            print("NOTIF: \(notification.unread), \(notification.reason), \(notification.subject), \(notification.updatedAt)")
+        }
         await MainActor.run {
             self.notifications = fetchedNotifs
             self.events = fetchedEvents
@@ -65,5 +67,13 @@ class GitHubViewModel {
     
     func searchRepos(query: String) async -> [Repo] {
         return await gitHubService.fetchUserRepos(query: query) ?? []
+    }
+    
+    
+    func openNotification(_ notif: GithubNotification) async {
+        let subjectUrl = notif.subject.url
+        guard let htmlUrl = await gitHubService.fetchNotificationHtmlUrl(subjectUrl),
+              let url = URL(string: htmlUrl) else { return }
+        NSWorkspace.shared.open(url)
     }
 }
