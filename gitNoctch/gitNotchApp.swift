@@ -47,9 +47,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             authService.token = token
             authService.isAuthenticated = true
             Task {
-                authService.currentUser = await gitHubService.fetchUser()
+                async let user = gitHubService.fetchUser()
+                async let data: Void = gitHubViewModel.fetchAll()
+                authService.currentUser = await user
+                await data
+                gitHubViewModel.startPolling()
             }
-            gitHubViewModel.startPolling()
         }
         let notch = DynamicNotch<
             NotchContentWrapper, GitNotchCompactLeadingView,

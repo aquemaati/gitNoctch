@@ -26,7 +26,6 @@ class GitHubViewModel {
     func startPolling() {
         pollingTask?.cancel()
         pollingTask = Task {
-            await fetchAll()
             while !Task.isCancelled {
                 await fetchAll()
                 try? await Task.sleep(for: .seconds(60))

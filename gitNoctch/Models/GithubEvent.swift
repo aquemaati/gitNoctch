@@ -76,4 +76,10 @@ struct GithubEvent: Codable {
         default: return .white.opacity(0.5)
         }
     }
+    
+    func timeAgo() -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: createdAt, relativeTo: Date())
+    }
 }

@@ -339,6 +339,10 @@ struct ContentView: View {
                     .font(.system(size: 10, design: .rounded))
                     .foregroundStyle(.white.opacity(0.3))
             }
+            Spacer()
+            Text(event.timeAgo())
+                .font(.system(size: 9, design: .rounded))
+                .foregroundStyle(.secondary)
         }
     }
     
