@@ -62,28 +62,64 @@ struct ContentView: View {
     
     // MARK: - Main
     var mainView: some View {
-        ZStack(alignment: .leading) {
-            HStack(alignment: .top, spacing: 0) {
-                userBlock
-                    .transition(.move(edge: .leading).combined(with: .opacity))
+        ZStack(alignment: .top) {
+            ZStack(alignment: .leading) {
+                HStack(alignment: .top, spacing: 0) {
+                    userBlock
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    Rectangle()
+                        .fill(.white.opacity(0.07))
+                        .frame(width: 1)
+                        .padding(.vertical, 16)
+                        .transition(.move(edge: .leading).combined(with: .opacity))
+                    rightBlock
+                }
+                .opacity(isSearching ? 0 : 1)
+                .offset(x: isSearching ? -30 : 0)
                 
-                Rectangle()
-                    .fill(.white.opacity(0.07))
-                    .frame(width: 1)
-                    .padding(.vertical, 16)
-                    .transition(.move(edge: .leading).combined(with: .opacity))
-                
-                rightBlock
+                if isSearching {
+                    searchFullView
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                }
             }
-            .opacity(isSearching ? 0 : 1)
-            .offset(x: isSearching ? -30 : 0)
+            .frame(minWidth: 520, minHeight: 160)
+            .animation(.spring(duration: 0.35), value: isSearching)
             
-            if isSearching {
-                searchFullView
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            // Tab dans la notch
+            HStack {
+                Button { } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 9))
+                        Text("Activity")
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.white.opacity(0.15))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                Button { } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 9))
+                        Text("tab2")
+                            .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(.white.opacity(0.15))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .offset(y: -25)
         }
-        .frame(minWidth: 520, minHeight: 160)
         .animation(.spring(duration: 0.35), value: isSearching)
     }
     
