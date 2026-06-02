@@ -47,7 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         notch = DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>(
-            style: .auto,
+            style: .notch(topCornerRadius: 25, bottomCornerRadius: 45),
             expanded: {
                 NotchContentWrapper(
                     authService: self.authService,

@@ -14,19 +14,19 @@ struct EventRowView: View {
         HStack(spacing: 8) {
             // Icône branche
             Image(systemName: event.icon())
-                .font(.system(size: 10))
+                .font(.system(size: 12))
                 .foregroundStyle(event.iconColor())
             
             // Branche
-            Text(event.branchName() ?? "")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+            Text(event.branchName() ?? "merge")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
                 .foregroundStyle(event.iconColor())
                 .lineLimit(1)
                 .frame(width: 60, alignment: .leading)
             
             // Repo
             Text(event.repo.name)
-                .font(.system(size: 14, design: .rounded))
+                .font(.system(size: 10, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -12,11 +12,15 @@ struct MainView: View {
     @Environment(GitHubViewModel.self) var gitHubViewModel
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            leftBlock
-            rightBlock
+        ZStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 0) {
+                leftBlock
+                rightBlock
+            }
+            .frame(minWidth: 520)
+            
+            NotchTopBarView()
         }
-//        .frame(minWidth: 520, minHeight: 160)
     }
     
     var leftBlock: some View {
