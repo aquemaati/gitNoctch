@@ -15,12 +15,12 @@ struct AvatarView: View {
             image
                 .resizable()
                 .scaledToFill()
-                .frame(width: 60, height: 60)
+                .frame(width: 96, height: 96)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
         } placeholder: {
             RoundedRectangle(cornerRadius: 16)
                 .fill(.white.opacity(0.08))
-                .frame(width: 60, height: 60)
+                .frame(width: 96, height: 96)
         }
     }
 }
