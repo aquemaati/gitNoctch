@@ -34,7 +34,7 @@ struct MainView: View {
     
     var rightBlock: some View {
         let _ = print("events count: \(gitHubViewModel.events.count)")
-        return VStack(alignment: .center, spacing: 14) {
+        return VStack(alignment: .center, spacing: 8) {
             ActivityHeaderView()
             
             VStack(alignment: .leading, spacing: 8) {
