@@ -52,4 +52,24 @@ struct gitNoctchTests {
         print("PRs: \(result?.prs ?? -1), Reviews: \(result?.reviews ?? -1)")
         #expect(result != nil)
     }
+    
+    @Test @MainActor func fetchRepositoriesReturnsData() async {
+        let authService = AuthService()
+        authService.token = authService.getToken()
+        let githubService = GitHubService(authService: authService)
+        
+        // Test sans recherche
+        let result = await githubService.fetchRepositories()
+        print("Repos: \(result?.repos.count ?? 0), nextCursor: \(result?.nextCursor ?? "nil")")
+        #expect(result != nil)
+        #expect(result?.repos.isEmpty == false)
+        
+        // Test avec recherche
+        let searchResult = await githubService.fetchRepositories(query: "git")
+        print("Search repos: \(searchResult?.repos.count ?? 0)")
+        result?.repos.prefix(3).forEach { repo in
+            print("\(repo.nameWithOwner) — ⭐️\(repo.stargazerCount) — \(repo.pushedAt ?? "no date")")
+        }
+        #expect(searchResult != nil)
+    }
 }

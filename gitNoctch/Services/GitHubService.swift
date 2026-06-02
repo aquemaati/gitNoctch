@@ -107,34 +107,73 @@ class GitHubService {
         )
     }
     
-    func fetchRepositories(query: String = "") async -> [Repository]? {
-        let searchQuery = query.isEmpty ? "" : ", query: \"\(query)\""
-        let gqlQuery = """
-        {
-          viewer {
-            repositories(first: 20, orderBy: {field: PUSHED_AT, direction: DESC}\(searchQuery)) {
-              nodes {
-                name
-                nameWithOwner
-                url
-                isPrivate
-                stargazerCount
-                forkCount
-                pushedAt
-                primaryLanguage {
-                  name
-                }
-                licenseInfo {
-                  spdxId
+    func fetchRepositories(query: String = "", after: String? = nil) async -> (repos: [Repository], nextCursor: String?)? {
+        let afterClause = after.map { ", after: \"\($0)\"" } ?? ""
+        
+        if query.isEmpty {
+            let gqlQuery = """
+            {
+              viewer {
+                repositories(first: 50, orderBy: {field: PUSHED_AT, direction: DESC}\(afterClause)) {
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                  nodes {
+                    name
+                    nameWithOwner
+                    url
+                    isPrivate
+                    stargazerCount
+                    forkCount
+                    pushedAt
+                    primaryLanguage { name }
+                    licenseInfo { spdxId }
+                  }
                 }
               }
             }
-          }
+            """
+            guard let data = await fetchGraphQL(query: gqlQuery) else { return nil }
+            guard let response = try? JSONDecoder().decode(RepositoryResponse.self, from: data) else { return nil }
+            let connection = response.data.viewer.repositories
+            return (
+                repos: connection.nodes,
+                nextCursor: connection.pageInfo.hasNextPage ? connection.pageInfo.endCursor : nil
+            )
+            
+        } else {
+            let gqlQuery = """
+            {
+              search(query: "user:@me \(query) fork:false", type: REPOSITORY, first: 50\(afterClause)) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  ... on Repository {
+                    name
+                    nameWithOwner
+                    url
+                    isPrivate
+                    stargazerCount
+                    forkCount
+                    pushedAt
+                    primaryLanguage { name }
+                    licenseInfo { spdxId }
+                  }
+                }
+              }
+            }
+            """
+            guard let data = await fetchGraphQL(query: gqlQuery) else { return nil }
+            guard let response = try? JSONDecoder().decode(SearchRepositoryResponse.self, from: data) else { return nil }
+            let connection = response.data.search
+            return (
+                repos: connection.nodes,
+                nextCursor: connection.pageInfo.hasNextPage ? connection.pageInfo.endCursor : nil
+            )
         }
-        """
-        
-        guard let data = await fetchGraphQL(query: gqlQuery) else { return nil }
-        return try? JSONDecoder().decode(RepositoryResponse.self, from: data).data.viewer.repositories.nodes
     }
 
     // MARK: - Notification

@@ -7,17 +7,21 @@
 
 import Foundation
 import SwiftUI
-//internal import Combine
 
 @Observable
 class GitHubViewModel {
     
-    var notifications: [GithubNotification] = []
+    // MARK: - State
+    var viewer: ViewerUser?
+    var contributions: ContributionCalendar?
     var events: [GithubEvent] = []
-    var repos: [Repo] = []
+    var notifications: [GithubNotification] = []
+    var repositories: [Repository] = []
+    var pullRequestsCount: Int = 0
+    var reviewsCount: Int = 0
     var isLoading: Bool = false
-
-    // Pooling
+    
+    // MARK: - Private
     private var pollingTask: Task<Void, Never>?
     private let gitHubService: GitHubService
 
@@ -25,51 +29,68 @@ class GitHubViewModel {
         self.gitHubService = gitHubService
     }
 
+    // MARK: - Polling
     func startPolling() {
         pollingTask?.cancel()
         pollingTask = Task {
             while !Task.isCancelled {
                 await fetchAll()
-                try? await Task.sleep(for: .seconds(20))
+                try? await Task.sleep(for: .seconds(60))
             }
         }
     }
     
     func stopPolling() {
-            pollingTask?.cancel()
-            pollingTask = nil
-        }
+        pollingTask?.cancel()
+        pollingTask = nil
+    }
 
+    // MARK: - Fetch
     func fetchAll() async {
-        print("fetchAll called")
         isLoading = true
-        async let n = gitHubService.fetchNotifications()
+        
+        async let v = gitHubService.fetchViewer()
+        async let c = gitHubService.fetchContributions()
         async let e = gitHubService.fetchEvents()
-        let fetchedNotifs = await n ?? []
+        async let n = gitHubService.fetchNotifications()
+        async let pr = gitHubService.fetchPullRequestsAndReviews()
+        async let r = gitHubService.fetchRepositories()
+        
+        let fetchedViewer = await v
+        let fetchedContributions = await c
         let fetchedEvents = await e ?? []
+        let fetchedNotifs = await n ?? []
+        let fetchedPR = await pr
+        let fetchedRepos = await r
         
-        fetchedEvents.indices.forEach { index in
-            print("EVENT: \(fetchedEvents[index].repo.name), \(fetchedEvents[index].type), \(fetchedEvents[index].createdAt)")
-        }
-        print("fetchAll done — events: \(fetchedEvents.count), notifs: \(fetchedNotifs.count)")
-        print("------------------------------------------------------------------------")
-        
-        fetchedNotifs.forEach { notification in
-            print("NOTIF: \(notification.unread), \(notification.reason), \(notification.subject), \(notification.updatedAt)")
-        }
         await MainActor.run {
-            self.notifications = fetchedNotifs
+            self.viewer = fetchedViewer
+            self.contributions = fetchedContributions
             self.events = fetchedEvents
+            self.notifications = fetchedNotifs
+            self.pullRequestsCount = fetchedPR?.prs ?? 0
+            self.reviewsCount = fetchedPR?.reviews ?? 0
+            self.repositories = fetchedRepos?.repos ?? []
             self.isLoading = false
         }
-        print("fetchAll MainActor done — viewModel.events: \(self.events.count)")
     }
     
-    func searchRepos(query: String) async -> [Repo] {
-        return await gitHubService.fetchUserRepos(query: query) ?? []
+    // MARK: - Repos
+    func loadMoreRepositories(after cursor: String) async {
+        let result = await gitHubService.fetchRepositories(after: cursor)
+        await MainActor.run {
+            self.repositories.append(contentsOf: result?.repos ?? [])
+        }
     }
     
+    func searchRepositories(query: String) async {
+        let result = await gitHubService.fetchRepositories(query: query)
+        await MainActor.run {
+            self.repositories = result?.repos ?? []
+        }
+    }
     
+    // MARK: - Notifications
     func openNotification(_ notif: GithubNotification) async {
         let subjectUrl = notif.subject.url
         guard let htmlUrl = await gitHubService.fetchNotificationHtmlUrl(subjectUrl),

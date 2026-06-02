@@ -34,30 +34,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         gitHubService: gitHubService
     )
 
-    var notch:
-        DynamicNotch<
-            NotchContentWrapper, GitNotchCompactLeadingView,
-            GitNotchCompactTrailingView
-        >?
+    var notch: DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-
-        //récupération du token
         if let token = authService.getToken() {
             authService.token = token
             authService.isAuthenticated = true
             Task {
-                async let user = gitHubService.fetchUser()
-                async let data: Void = gitHubViewModel.fetchAll()
-                authService.currentUser = await user
-                await data
+                await gitHubViewModel.fetchAll()
                 gitHubViewModel.startPolling()
             }
         }
-        let notch = DynamicNotch<
-            NotchContentWrapper, GitNotchCompactLeadingView,
-            GitNotchCompactTrailingView
-        >(
+
+        notch = DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>(
             style: .auto,
             expanded: {
                 NotchContentWrapper(
@@ -68,8 +57,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             compactLeading: { GitNotchCompactLeadingView() },
             compactTrailing: { GitNotchCompactTrailingView() }
         )
+
         Task {
-            await notch.compact()
+            await notch?.compact()
+            guard let notch else { return }
             for await isHovering in notch.$isHovering.values {
                 if isHovering {
                     await notch.expand()
@@ -83,16 +74,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         guard let url = urls.first else { return }
         guard
-            let code = URLComponents(
-                url: url,
-                resolvingAgainstBaseURL: false
-            )?.queryItems?.first(where: { $0.name == "code" })?.value
+            let code = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                .queryItems?.first(where: { $0.name == "code" })?.value
         else { return }
         Task {
             await authService.handleCallback(code: code)
-            authService.currentUser = await gitHubService.fetchUser()
+            await gitHubViewModel.fetchAll()
             gitHubViewModel.startPolling()
-
         }
     }
 
