@@ -47,18 +47,25 @@ class GitHubViewModel {
 
     // MARK: - Fetch
     func fetchAll() async {
+        
         isLoading = true
         
-        async let v = gitHubService.fetchViewer()
+        
+        let fetchedViewer = await gitHubService.fetchViewer()
+
+//        async let v = gitHubService.fetchViewer()
         async let c = gitHubService.fetchContributions()
-        async let e = gitHubService.fetchEvents()
+        async let e = gitHubService.fetchEvents(login: fetchedViewer?.login ?? "")
+        
         async let n = gitHubService.fetchNotifications()
         async let pr = gitHubService.fetchPullRequestsAndReviews()
         async let r = gitHubService.fetchRepositories()
         
-        let fetchedViewer = await v
+//        let fetchedViewer = await v
         let fetchedContributions = await c
         let fetchedEvents = await e ?? []
+        print("fetched events raw: \(fetchedEvents.count)")
+
         let fetchedNotifs = await n ?? []
         let fetchedPR = await pr
         let fetchedRepos = await r
@@ -73,6 +80,7 @@ class GitHubViewModel {
             self.repositories = fetchedRepos?.repos ?? []
             self.isLoading = false
         }
+        print("fetchAll done — events: \(fetchedEvents.count)")
     }
     
     // MARK: - Repos

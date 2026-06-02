@@ -16,7 +16,7 @@ struct MainView: View {
             leftBlock
             rightBlock
         }
-        .frame(minWidth: 520, minHeight: 160)
+//        .frame(minWidth: 520, minHeight: 160)
     }
     
     var leftBlock: some View {
@@ -27,18 +27,29 @@ struct MainView: View {
                 UserStatsView()
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
-        .frame(width: 300)
+        .padding(.trailing, 20)
+        .padding(.vertical, 2)
+//        .frame(width: 300)
     }
     
     var rightBlock: some View {
-        VStack {
-            Text("right")
+        let _ = print("events count: \(gitHubViewModel.events.count)")
+        return VStack(alignment: .center, spacing: 14) {
+            ActivityHeaderView()
+            
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(gitHubViewModel.events.prefix(2), id: \.id) { event in
+                    EventRowView(event: event)
+                }
+            }
+            
+//            Spacer()
+            
+            PRReviewButtonsView()
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 18)
-        .frame(maxWidth: .infinity)
+        .padding(.leading, 24)
+        .padding(.vertical, 2)
+//        .frame(maxWidth: .infinity)
     }
 }
 

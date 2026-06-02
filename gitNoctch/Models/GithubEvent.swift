@@ -26,6 +26,14 @@ struct GithubEvent: Codable {
         }
     }
     
+    func branchName() -> String? {
+        payload?.branchName()
+    }
+
+    func commitHash() -> String? {
+        payload?.shortHead()
+    }
+    
     enum CodingKeys: String, CodingKey {
         case id
         case type

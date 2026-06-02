@@ -270,8 +270,8 @@ class GitHubService {
     }
 
     // MARK: - GithubEvent
-    func fetchEvents() async -> [GithubEvent]? {
-        guard let login = authService.currentUser?.login else { return nil }
+    func fetchEvents(login: String) async -> [GithubEvent]? {
+//        guard let login = authService.currentUser?.login else { return nil }
         guard let token = authService.token else { return nil }
 
         let url = baseURL.appendingPathComponent("users/\(login)/events")
@@ -287,6 +287,8 @@ class GitHubService {
 
         // 2. Ajouter un User-Agent (requis par GitHub)
         request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        print("fetchEvents token: \(authService.token?.prefix(10) ?? "nil")")
+
 
         do {
             let (data, response) = try await URLSession.shared.data(
@@ -299,6 +301,7 @@ class GitHubService {
                 print("Erreur HTTP")
                 return nil
             }
+            print(String(data: data, encoding: .utf8) ?? "no data")
 
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
