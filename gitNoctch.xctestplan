@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "D9CED108-2C62-4763-AD95-FF706C3A1211",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:gitNoctch.xcodeproj",
+      "identifier" : "ECE95F832FC868A700AA5A72",
+      "name" : "gitNoctch"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:gitNoctch.xcodeproj",
+        "identifier" : "EC5024252FCE10AC006D1FA0",
+        "name" : "gitNoctchTests"
+      }
+    }
+  ],
+  "version" : 1
+}

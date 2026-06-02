@@ -10,7 +10,19 @@
 		ECE95F9D2FC86C9000AA5A72 /* DynamicNotchKit in Frameworks */ = {isa = PBXBuildFile; productRef = ECE95F9C2FC86C9000AA5A72 /* DynamicNotchKit */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		EC50242A2FCE10AC006D1FA0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ECE95F7C2FC868A700AA5A72 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ECE95F832FC868A700AA5A72;
+			remoteInfo = gitNoctch;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		EC5024262FCE10AC006D1FA0 /* gitNoctchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = gitNoctchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EC50242F2FCE1575006D1FA0 /* gitNoctch.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = gitNoctch.xctestplan; sourceTree = "<group>"; };
 		ECE95F842FC868A700AA5A72 /* gitNoctch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gitNoctch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,6 +37,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		EC5024272FCE10AC006D1FA0 /* gitNoctchTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = gitNoctchTests;
+			sourceTree = "<group>";
+		};
 		ECE95F862FC868A700AA5A72 /* gitNoctch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -36,6 +53,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		EC5024232FCE10AC006D1FA0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ECE95F812FC868A700AA5A72 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -50,7 +74,9 @@
 		ECE95F7B2FC868A700AA5A72 = {
 			isa = PBXGroup;
 			children = (
+				EC50242F2FCE1575006D1FA0 /* gitNoctch.xctestplan */,
 				ECE95F862FC868A700AA5A72 /* gitNoctch */,
+				EC5024272FCE10AC006D1FA0 /* gitNoctchTests */,
 				ECE95F852FC868A700AA5A72 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				ECE95F842FC868A700AA5A72 /* gitNoctch.app */,
+				EC5024262FCE10AC006D1FA0 /* gitNoctchTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,6 +93,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		EC5024252FCE10AC006D1FA0 /* gitNoctchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EC50242C2FCE10AC006D1FA0 /* Build configuration list for PBXNativeTarget "gitNoctchTests" */;
+			buildPhases = (
+				EC5024222FCE10AC006D1FA0 /* Sources */,
+				EC5024232FCE10AC006D1FA0 /* Frameworks */,
+				EC5024242FCE10AC006D1FA0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EC50242B2FCE10AC006D1FA0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EC5024272FCE10AC006D1FA0 /* gitNoctchTests */,
+			);
+			name = gitNoctchTests;
+			packageProductDependencies = (
+			);
+			productName = gitNoctchTests;
+			productReference = EC5024262FCE10AC006D1FA0 /* gitNoctchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		ECE95F832FC868A700AA5A72 /* gitNoctch */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = ECE95F8F2FC868A800AA5A72 /* Build configuration list for PBXNativeTarget "gitNoctch" */;
@@ -99,6 +149,10 @@
 				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					EC5024252FCE10AC006D1FA0 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = ECE95F832FC868A700AA5A72;
+					};
 					ECE95F832FC868A700AA5A72 = {
 						CreatedOnToolsVersion = 26.5;
 					};
@@ -122,11 +176,19 @@
 			projectRoot = "";
 			targets = (
 				ECE95F832FC868A700AA5A72 /* gitNoctch */,
+				EC5024252FCE10AC006D1FA0 /* gitNoctchTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		EC5024242FCE10AC006D1FA0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ECE95F822FC868A700AA5A72 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,6 +199,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		EC5024222FCE10AC006D1FA0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ECE95F802FC868A700AA5A72 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -146,7 +215,55 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		EC50242B2FCE10AC006D1FA0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ECE95F832FC868A700AA5A72 /* gitNoctch */;
+			targetProxy = EC50242A2FCE10AC006D1FA0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		EC50242D2FCE10AC006D1FA0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aquemaati.gitNoctchTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/gitNoctch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/gitNoctch";
+			};
+			name = Debug;
+		};
+		EC50242E2FCE10AC006D1FA0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = aquemaati.gitNoctchTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/gitNoctch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/gitNoctch";
+			};
+			name = Release;
+		};
 		ECE95F8D2FC868A800AA5A72 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -352,6 +469,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		EC50242C2FCE10AC006D1FA0 /* Build configuration list for PBXNativeTarget "gitNoctchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EC50242D2FCE10AC006D1FA0 /* Debug */,
+				EC50242E2FCE10AC006D1FA0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		ECE95F7F2FC868A700AA5A72 /* Build configuration list for PBXProject "gitNoctch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

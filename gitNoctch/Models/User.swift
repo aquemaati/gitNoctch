@@ -21,4 +21,6 @@ struct User: Codable {
         case publicRepos = "public_repos"
         case followers
     }
+    
+    
 }
