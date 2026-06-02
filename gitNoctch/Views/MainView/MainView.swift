@@ -27,7 +27,7 @@ struct MainView: View {
                 UserStatsView()
             }
         }
-        .padding(.trailing, 20)
+//        .padding(.trailing, )
         .padding(.vertical, 2)
 //        .frame(width: 300)
     }
