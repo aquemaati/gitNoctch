@@ -27,7 +27,7 @@ struct SearchView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .frame(minWidth: 520, maxHeight: 200)
+//        .frame(minWidth: 520, maxHeight: 200)
         .onChange(of: searchText) { _, newValue in
             Task {
                 await gitHubViewModel.searchRepositories(query: newValue)

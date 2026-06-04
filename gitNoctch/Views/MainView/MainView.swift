@@ -19,19 +19,20 @@ struct MainView: View {
         ZStack(alignment: .top) {
             if isSearchPresented {
                 SearchView(isSearchPresented: $isSearchPresented, searchText: $searchText)
-                    .frame(width: 700, height: 100)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(.opacity)
             } else {
                 HStack(alignment: .top, spacing: 0) {
                     leftBlock
                     rightBlock
                 }
-                .frame(minWidth: 520)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.opacity)
             }
             
             NotchTopBarView(isSearchPresented: $isSearchPresented, searchText: $searchText)
         }
+        .frame(width: 584, height: 104)
         .animation(.easeInOut(duration: 0.3), value: isSearchPresented)
     }
     
