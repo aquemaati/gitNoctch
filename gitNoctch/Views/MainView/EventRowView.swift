@@ -9,8 +9,19 @@ import SwiftUI
 
 struct EventRowView: View {
     let event: GithubEvent
-    
+
     var body: some View {
+        Button {
+            if let url = event.htmlURL() {
+                NSWorkspace.shared.open(url)
+            }
+        } label: {
+            rowContent
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 8) {
             // Icône branche
             Image(systemName: event.icon())

@@ -90,4 +90,17 @@ struct GithubEvent: Codable {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: createdAt, relativeTo: Date())
     }
+
+    /// URL GitHub vers laquelle ouvrir cet événement (commit pour un push, sinon le repo).
+    func htmlURL() -> URL? {
+        switch type {
+        case "PushEvent":
+            if let head = payload?.head {
+                return URL(string: "https://github.com/\(repo.name)/commit/\(head)")
+            }
+            return URL(string: "https://github.com/\(repo.name)")
+        default:
+            return URL(string: "https://github.com/\(repo.name)")
+        }
+    }
 }

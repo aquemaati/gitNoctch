@@ -11,8 +11,13 @@ struct NotchTopBarView: View {
     @Environment(GitHubViewModel.self) var gitHubViewModel
     @Binding var isSearchPresented: Bool
     @Binding var searchText: String
+    @Binding var isNotificationsPresented: Bool
     @FocusState private var isSearchFocused: Bool
-    
+
+    private var unreadCount: Int {
+        gitHubViewModel.notifications.filter { $0.unread }.count
+    }
+
     var body: some View {
         HStack {
             // Loupe fixe + barre de recherche qui s'étend
@@ -24,6 +29,7 @@ struct NotchTopBarView: View {
                             searchText = ""
                             isSearchFocused = false
                         } else {
+                            isNotificationsPresented = false
                             isSearchFocused = true
                         }
                     }
@@ -99,10 +105,27 @@ struct NotchTopBarView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button { } label: {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isNotificationsPresented.toggle()
+                        if isNotificationsPresented {
+                            isSearchPresented = false
+                            searchText = ""
+                            isSearchFocused = false
+                        }
+                    }
+                } label: {
                     Image(systemName: "bell.fill")
                         .font(.system(size: 12))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(isNotificationsPresented ? .white : .white.opacity(0.7))
+                        .overlay(alignment: .topTrailing) {
+                            if unreadCount > 0 {
+                                Circle()
+                                    .fill(.red)
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: 3, y: -2)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
             }
@@ -116,5 +139,9 @@ struct NotchTopBarView: View {
 }
 
 #Preview {
-    NotchTopBarView(isSearchPresented: .constant(false), searchText: .constant(""))
+    NotchTopBarView(
+        isSearchPresented: .constant(false),
+        searchText: .constant(""),
+        isNotificationsPresented: .constant(false)
+    )
 }
