@@ -44,20 +44,27 @@ struct EventRowView: View {
                 .lineLimit(1)
                 .frame(width: 60, alignment: .leading)
 
-            // Repo
-            Text(event.repo.name)
-                .font(.system(size: 10, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
-                .lineLimit(1)
+            if showCommitMessage {
+                // Repo (taille du contenu) + message tronqué sur la même ligne.
+                Text(event.repo.name)
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
 
-            // Message de commit tronqué sur la même ligne (vue activité).
-            // Sinon une chaîne vide remplit l'espace pour pousser hash/temps à droite.
-            Text(showCommitMessage ? (commitMessage ?? "") : "")
-                .font(.system(size: 10, design: .rounded))
-                .foregroundStyle(.white.opacity(0.45))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                Text(commitMessage ?? "")
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.45))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                // Vue principale : le repo occupe l'espace flexible, sans message.
+                Text(event.repo.name)
+                    .font(.system(size: 10, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             // Hash
             Text(event.commitHash() ?? "")
