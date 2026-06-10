@@ -20,6 +20,25 @@ struct NotchTopBarView: View {
 
     var body: some View {
         HStack {
+            if isNotificationsPresented {
+                // Bouton retour vers les activités
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        isNotificationsPresented = false
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("Notifications")
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                    }
+                    .frame(height: 24)
+                    .foregroundStyle(.white.opacity(0.8))
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity)
+            } else {
             // Loupe fixe + barre de recherche qui s'étend
             HStack(spacing: 0) {
                 Button {
@@ -87,6 +106,7 @@ struct NotchTopBarView: View {
                         .opacity(isSearchPresented ? 1 : 0)
                 )
                 .clipped()
+            }
             }
 
             Spacer()
