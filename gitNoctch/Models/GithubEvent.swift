@@ -15,23 +15,35 @@ struct GithubEvent: Codable {
     struct Payload: Codable {
         let ref: String?
         let head: String?
-        
+        let commits: [Commit]?
+
+        struct Commit: Codable {
+            let sha: String?
+            let message: String
+        }
+
         func shortHead() -> String? {
             guard let head = head else { return nil }
             return String(head.prefix(7))
         }
-        
+
         func branchName() -> String? {
             ref?.replacingOccurrences(of: "refs/heads/", with: "")
         }
     }
-    
+
     func branchName() -> String? {
         payload?.branchName()
     }
 
     func commitHash() -> String? {
         payload?.shortHead()
+    }
+
+    /// Première ligne du message du dernier commit poussé (le HEAD), si disponible.
+    func commitMessage() -> String? {
+        guard let message = payload?.commits?.last?.message else { return nil }
+        return message.components(separatedBy: "\n").first
     }
     
     enum CodingKeys: String, CodingKey {
@@ -89,5 +101,18 @@ struct GithubEvent: Codable {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: createdAt, relativeTo: Date())
+    }
+
+    /// URL GitHub vers laquelle ouvrir cet événement (commit pour un push, sinon le repo).
+    func htmlURL() -> URL? {
+        switch type {
+        case "PushEvent":
+            if let head = payload?.head {
+                return URL(string: "https://github.com/\(repo.name)/commit/\(head)")
+            }
+            return URL(string: "https://github.com/\(repo.name)")
+        default:
+            return URL(string: "https://github.com/\(repo.name)")
+        }
     }
 }

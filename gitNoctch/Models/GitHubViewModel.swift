@@ -20,6 +20,9 @@ class GitHubViewModel {
     var pullRequestsCount: Int = 0
     var reviewsCount: Int = 0
     var isLoading: Bool = false
+
+    /// Cache des messages de commit par identifiant d'événement (évite de re-fetch).
+    private var commitMessages: [String: String] = [:]
     
     // MARK: - Private
     private var pollingTask: Task<Void, Never>?
@@ -98,6 +101,19 @@ class GitHubViewModel {
         }
     }
     
+    // MARK: - Commit messages
+    /// Renvoie la première ligne du message de commit d'un PushEvent (avec cache).
+    func commitMessage(for event: GithubEvent) async -> String? {
+        if let cached = commitMessages[event.id] { return cached }
+        guard event.type == "PushEvent",
+              let sha = event.payload?.head else { return nil }
+        let message = await gitHubService.fetchCommitMessage(repoFullName: event.repo.name, sha: sha)
+        if let message {
+            await MainActor.run { self.commitMessages[event.id] = message }
+        }
+        return message
+    }
+
     // MARK: - Notifications
     func openNotification(_ notif: GithubNotification) async {
         let subjectUrl = notif.subject.url

@@ -8,19 +8,28 @@
 import SwiftUI
 
 struct ActivityHeaderView: View {
+    @Binding var isActivityPresented: Bool
+
     var body: some View {
         HStack {
             Text("last Activty")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
             Spacer()
-            Text("See all")
-                .font(.subheadline)
-                .foregroundStyle(.blue)
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isActivityPresented = true
+                }
+            } label: {
+                Text("See all")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+            }
+            .buttonStyle(.plain)
         }
     }
 }
 
 #Preview {
-    ActivityHeaderView()
+    ActivityHeaderView(isActivityPresented: .constant(false))
 }

@@ -13,6 +13,9 @@ struct PRReviewButtonsView: View {
     var body: some View {
         HStack(spacing: 12) {
             Button {
+                if let url = URL(string: "https://github.com/pulls") {
+                    NSWorkspace.shared.open(url)
+                }
             } label: {
                 HStack(spacing: 6) {
                     Text("\(gitHubViewModel.pullRequestsCount)")
@@ -36,6 +39,9 @@ struct PRReviewButtonsView: View {
             .buttonStyle(.plain)
             
             Button {
+                if let url = URL(string: "https://github.com/pulls/review-requested") {
+                    NSWorkspace.shared.open(url)
+                }
             } label: {
                 HStack(spacing: 6) {
                     Text("\(gitHubViewModel.reviewsCount)")
