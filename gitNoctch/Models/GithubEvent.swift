@@ -15,23 +15,35 @@ struct GithubEvent: Codable {
     struct Payload: Codable {
         let ref: String?
         let head: String?
-        
+        let commits: [Commit]?
+
+        struct Commit: Codable {
+            let sha: String?
+            let message: String
+        }
+
         func shortHead() -> String? {
             guard let head = head else { return nil }
             return String(head.prefix(7))
         }
-        
+
         func branchName() -> String? {
             ref?.replacingOccurrences(of: "refs/heads/", with: "")
         }
     }
-    
+
     func branchName() -> String? {
         payload?.branchName()
     }
 
     func commitHash() -> String? {
         payload?.shortHead()
+    }
+
+    /// Première ligne du message du dernier commit poussé (le HEAD), si disponible.
+    func commitMessage() -> String? {
+        guard let message = payload?.commits?.last?.message else { return nil }
+        return message.components(separatedBy: "\n").first
     }
     
     enum CodingKeys: String, CodingKey {

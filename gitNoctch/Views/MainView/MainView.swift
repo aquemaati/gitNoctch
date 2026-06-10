@@ -13,6 +13,7 @@ struct MainView: View {
     @State private var isSearchPresented = false
     @State private var searchText: String = ""
     @State private var isNotificationsPresented = false
+    @State private var isActivityPresented = false
 
 
 
@@ -24,6 +25,10 @@ struct MainView: View {
                     .transition(.opacity)
             } else if isNotificationsPresented {
                 NotificationsView(isNotificationsPresented: $isNotificationsPresented)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+            } else if isActivityPresented {
+                ActivityView(isActivityPresented: $isActivityPresented)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .transition(.opacity)
             } else {
@@ -38,12 +43,14 @@ struct MainView: View {
             NotchTopBarView(
                 isSearchPresented: $isSearchPresented,
                 searchText: $searchText,
-                isNotificationsPresented: $isNotificationsPresented
+                isNotificationsPresented: $isNotificationsPresented,
+                isActivityPresented: $isActivityPresented
             )
         }
         .frame(width: 584, height: 104)
         .animation(.easeInOut(duration: 0.3), value: isSearchPresented)
         .animation(.easeInOut(duration: 0.3), value: isNotificationsPresented)
+        .animation(.easeInOut(duration: 0.3), value: isActivityPresented)
     }
     
     var leftBlock: some View {
@@ -62,7 +69,7 @@ struct MainView: View {
     var rightBlock: some View {
         let _ = print("events count: \(gitHubViewModel.events.count)")
         return VStack(alignment: .center, spacing: 8) {
-            ActivityHeaderView()
+            ActivityHeaderView(isActivityPresented: $isActivityPresented)
             
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(gitHubViewModel.events.prefix(2), id: \.id) { event in

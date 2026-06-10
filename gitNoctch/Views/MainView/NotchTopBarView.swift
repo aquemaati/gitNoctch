@@ -12,25 +12,32 @@ struct NotchTopBarView: View {
     @Binding var isSearchPresented: Bool
     @Binding var searchText: String
     @Binding var isNotificationsPresented: Bool
+    @Binding var isActivityPresented: Bool
     @FocusState private var isSearchFocused: Bool
 
     private var unreadCount: Int {
         gitHubViewModel.notifications.filter { $0.unread }.count
     }
 
+    /// Une vue détaillée (notifications ou activité) est-elle affichée ?
+    private var isDetailPresented: Bool {
+        isNotificationsPresented || isActivityPresented
+    }
+
     var body: some View {
         HStack {
-            if isNotificationsPresented {
-                // Bouton retour vers les activités
+            if isDetailPresented {
+                // Bouton retour vers la vue principale
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         isNotificationsPresented = false
+                        isActivityPresented = false
                     }
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 12, weight: .semibold))
-                        Text("Notifications")
+                        Text(isActivityPresented ? "Activity" : "Notifications")
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                     }
                     .frame(height: 24)
@@ -49,6 +56,7 @@ struct NotchTopBarView: View {
                             isSearchFocused = false
                         } else {
                             isNotificationsPresented = false
+                            isActivityPresented = false
                             isSearchFocused = true
                         }
                     }
@@ -132,6 +140,7 @@ struct NotchTopBarView: View {
                             isSearchPresented = false
                             searchText = ""
                             isSearchFocused = false
+                            isActivityPresented = false
                         }
                     }
                 } label: {
@@ -162,6 +171,7 @@ struct NotchTopBarView: View {
     NotchTopBarView(
         isSearchPresented: .constant(false),
         searchText: .constant(""),
-        isNotificationsPresented: .constant(false)
+        isNotificationsPresented: .constant(false),
+        isActivityPresented: .constant(false)
     )
 }

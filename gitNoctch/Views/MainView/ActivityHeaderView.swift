@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ActivityHeaderView: View {
-    @Environment(GitHubViewModel.self) var gitHubViewModel
+    @Binding var isActivityPresented: Bool
 
     var body: some View {
         HStack {
@@ -17,9 +17,8 @@ struct ActivityHeaderView: View {
                 .foregroundStyle(.secondary)
             Spacer()
             Button {
-                if let login = gitHubViewModel.viewer?.login,
-                   let url = URL(string: "https://github.com/\(login)?tab=overview") {
-                    NSWorkspace.shared.open(url)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    isActivityPresented = true
                 }
             } label: {
                 Text("See all")
@@ -32,5 +31,5 @@ struct ActivityHeaderView: View {
 }
 
 #Preview {
-    ActivityHeaderView()
+    ActivityHeaderView(isActivityPresented: .constant(false))
 }

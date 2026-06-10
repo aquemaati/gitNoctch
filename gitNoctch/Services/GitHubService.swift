@@ -287,6 +287,10 @@ class GitHubService {
 
         // 2. Ajouter un User-Agent (requis par GitHub)
         request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+
+        // 3. En-têtes recommandés : inclut les événements privés du compte authentifié
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
         print("fetchEvents token: \(authService.token?.prefix(10) ?? "nil")")
 
 
@@ -308,6 +312,35 @@ class GitHubService {
             return try decoder.decode([GithubEvent].self, from: data)
         } catch {
             print("Erreur lors du décodage ou du réseau : \(error)")
+            return nil
+        }
+    }
+
+    /// Récupère le message du commit `sha` dans `repoFullName` ("owner/repo").
+    /// L'endpoint events ne contient pas les messages, on les récupère donc à part.
+    func fetchCommitMessage(repoFullName: String, sha: String) async -> String? {
+        guard let token = authService.token else { return nil }
+
+        let url = baseURL.appendingPathComponent("repos/\(repoFullName)/commits/\(sha)")
+        var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 10)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+
+        struct CommitResponse: Codable {
+            struct Commit: Codable { let message: String }
+            let commit: Commit
+        }
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else { return nil }
+            let decoded = try JSONDecoder().decode(CommitResponse.self, from: data)
+            return decoded.commit.message.components(separatedBy: "\n").first
+        } catch {
+            print("Erreur fetchCommitMessage : \(error)")
             return nil
         }
     }
