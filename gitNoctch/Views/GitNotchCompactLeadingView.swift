@@ -9,8 +9,6 @@ import SwiftUI
 
 struct GitNotchCompactLeadingView: View {
     var body: some View {
-        Image(systemName: "bell.badge")
-            .foregroundStyle(.white)
     }
 }
 

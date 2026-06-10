@@ -36,13 +36,24 @@ struct NotchTopBarView: View {
                 .buttonStyle(.plain)
                 
                 HStack(spacing: 6) {
-                    TextField("Search repos...", text: $searchText)
-                        .font(.system(size: 11, design: .rounded))
-                        .foregroundStyle(.white)
-                        .textFieldStyle(.plain)
-                        .frame(width: isSearchPresented ? 120 : 0)
-                        .focused($isSearchFocused)
-                        .opacity(isSearchPresented ? 1 : 0)
+                    if isSearchPresented {
+                        ZStack(alignment: .leading) {
+                            if searchText.isEmpty {
+                                Text("Search repos...")
+                                    .font(.system(size: 11, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.4))
+                                    .allowsHitTesting(false)
+                            }
+                            
+                            TextField("", text: $searchText)
+                                .font(.system(size: 11, design: .rounded))
+                                .foregroundStyle(.white)
+                                .textFieldStyle(.plain)
+                                .focused($isSearchFocused)
+                        }
+                        .frame(width: 120)
+                        .transition(.opacity)
+                    }
                     
                     if isSearchPresented {
                         Button {
@@ -76,9 +87,17 @@ struct NotchTopBarView: View {
 
             // Login + cloche — toujours visibles
             HStack(spacing: 8) {
-                Text(gitHubViewModel.viewer?.login ?? "")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
+                Button {
+                    if let login = gitHubViewModel.viewer?.login,
+                       let url = URL(string: "https://github.com/\(login)") {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    Text(gitHubViewModel.viewer?.login ?? "")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .buttonStyle(.plain)
 
                 Button { } label: {
                     Image(systemName: "bell.fill")

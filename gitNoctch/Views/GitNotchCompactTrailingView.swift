@@ -9,8 +9,6 @@ import SwiftUI
 
 struct GitNotchCompactTrailingView: View {
     var body: some View {
-        Text("0")
-            .foregroundStyle(.white)
     }
 }
 
