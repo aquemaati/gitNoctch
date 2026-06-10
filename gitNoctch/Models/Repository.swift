@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // Pour viewer.repositories
 struct RepositoryResponse: Codable {
@@ -62,9 +63,40 @@ struct Repository: Codable {
     
     struct Language: Codable {
         let name: String
+        let color: String?
     }
-    
+
     struct LicenseInfo: Codable {
         let spdxId: String
+    }
+}
+
+extension Repository {
+    /// Couleur du langage principal fournie par GitHub (hex), sinon une couleur neutre.
+    var languageColor: Color {
+        Color(hex: primaryLanguage?.color) ?? .gray
+    }
+
+    /// Libellé court "il y a X" calculé à partir de `pushedAt`.
+    var lastUpdateText: String? {
+        guard let pushedAt,
+              let date = ISO8601DateFormatter().date(from: pushedAt) else { return nil }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+extension Color {
+    /// Initialise une couleur à partir d'une chaîne hex GitHub ("#RRGGBB").
+    init?(hex: String?) {
+        guard let hex, hex.hasPrefix("#") else { return nil }
+        let hexString = String(hex.dropFirst())
+        guard hexString.count == 6, let value = Int(hexString, radix: 16) else { return nil }
+        self.init(
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255
+        )
     }
 }

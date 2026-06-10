@@ -127,7 +127,7 @@ class GitHubService {
                     stargazerCount
                     forkCount
                     pushedAt
-                    primaryLanguage { name }
+                    primaryLanguage { name color }
                     licenseInfo { spdxId }
                   }
                 }
@@ -159,7 +159,7 @@ class GitHubService {
                     stargazerCount
                     forkCount
                     pushedAt
-                    primaryLanguage { name }
+                    primaryLanguage { name color }
                     licenseInfo { spdxId }
                   }
                 }

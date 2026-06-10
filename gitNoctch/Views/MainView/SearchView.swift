@@ -14,18 +14,30 @@ struct SearchView: View {
     
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(gitHubViewModel.repositories, id: \.nameWithOwner) { repo in
-                    Button {
-                        NSWorkspace.shared.open(repo.url)
-                    } label: {
-                        repoRow(repo)
+            VStack(alignment: .leading, spacing: 3) {
+                if gitHubViewModel.repositories.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text(searchText.isEmpty ? "No repositories" : "No results for “\(searchText)”")
+                            .font(.system(size: 12, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.4))
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
+                    .padding(.top, 24)
+                } else {
+                    ForEach(gitHubViewModel.repositories, id: \.nameWithOwner) { repo in
+                        Button {
+                            NSWorkspace.shared.open(repo.url)
+                        } label: {
+                            repoRow(repo)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
         }
 //        .frame(minWidth: 520, maxHeight: 200)
         .onChange(of: searchText) { _, newValue in
@@ -37,24 +49,36 @@ struct SearchView: View {
     
     func repoRow(_ repo: Repository) -> some View {
         HStack(spacing: 10) {
-            // Icône langage placeholder
+            // Pastille teintée par la couleur du langage
             Circle()
-                .fill(.white.opacity(0.1))
+                .fill(repo.languageColor.opacity(0.25))
                 .frame(width: 20, height: 20)
                 .overlay(
                     Text(String(repo.primaryLanguage?.name.prefix(1) ?? "?"))
-                        .font(.system(size: 9))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(repo.languageColor)
                 )
-            
-            // Nom
-            Text(repo.nameWithOwner)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.9))
-                .lineLimit(1)
-            
+                .overlay(
+                    Circle().stroke(repo.languageColor.opacity(0.5), lineWidth: 1)
+                )
+
+            // Nom + dernière mise à jour
+            VStack(alignment: .leading, spacing: 1) {
+                Text(repo.nameWithOwner)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(1)
+
+                if let lastUpdate = repo.lastUpdateText {
+                    Text("Updated \(lastUpdate)")
+                        .font(.system(size: 9, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .lineLimit(1)
+                }
+            }
+
             Spacer()
-            
+
             // Forks
             if repo.forkCount > 0 {
                 HStack(spacing: 3) {
@@ -96,5 +120,11 @@ struct SearchView: View {
                     .foregroundStyle(.white.opacity(0.3))
             }
         }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.white.opacity(0.04))
+        )
     }
 }
