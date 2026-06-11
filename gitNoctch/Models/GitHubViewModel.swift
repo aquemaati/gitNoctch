@@ -23,6 +23,13 @@ class GitHubViewModel {
 
     /// Cache des messages de commit par identifiant d'événement (évite de re-fetch).
     private var commitMessages: [String: String] = [:]
+
+    /// Identifiants de notifications déjà vues (pour détecter les nouvelles).
+    private var seenNotificationIDs: Set<String> = []
+    private var didSeedNotifications = false
+
+    /// Appelé quand une nouvelle notification non lue est détectée lors d'un poll.
+    var onNewNotification: ((GithubNotification) async -> Void)?
     
     // MARK: - Private
     private var pollingTask: Task<Void, Never>?
@@ -83,7 +90,28 @@ class GitHubViewModel {
             self.repositories = fetchedRepos?.repos ?? []
             self.isLoading = false
         }
+        await detectNewNotifications(fetchedNotifs)
         print("fetchAll done — events: \(fetchedEvents.count)")
+    }
+
+    /// Détecte les notifications non lues apparues depuis le dernier poll et
+    /// déclenche `onNewNotification` pour la plus récente (évite le spam).
+    private func detectNewNotifications(_ notifs: [GithubNotification]) async {
+        let currentIDs = Set(notifs.map(\.id))
+
+        // Premier chargement : on mémorise sans alerter.
+        guard didSeedNotifications else {
+            didSeedNotifications = true
+            seenNotificationIDs = currentIDs
+            return
+        }
+
+        let newOnes = notifs.filter { $0.unread && !seenNotificationIDs.contains($0.id) }
+        seenNotificationIDs.formUnion(currentIDs)
+
+        if let latest = newOnes.sorted(by: { $0.updatedAt > $1.updatedAt }).first {
+            await onNewNotification?(latest)
+        }
     }
     
     // MARK: - Repos
@@ -115,6 +143,17 @@ class GitHubViewModel {
     }
 
     // MARK: - Notifications
+    /// Cache des détails d'état (ouvert/fermé/fusionné) par identifiant de notification.
+    private var subjectDetailsCache: [String: NotificationSubjectDetail] = [:]
+
+    /// Récupère (avec cache) l'état du sujet d'une notification.
+    func subjectDetail(for notif: GithubNotification) async -> NotificationSubjectDetail? {
+        if let cached = subjectDetailsCache[notif.id] { return cached }
+        guard let detail = await gitHubService.fetchSubjectDetail(url: notif.subject.url) else { return nil }
+        await MainActor.run { self.subjectDetailsCache[notif.id] = detail }
+        return detail
+    }
+
     func openNotification(_ notif: GithubNotification) async {
         let subjectUrl = notif.subject.url
         guard let htmlUrl = await gitHubService.fetchNotificationHtmlUrl(subjectUrl),

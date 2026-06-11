@@ -162,8 +162,10 @@ struct NotchTopBarView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .frame(maxWidth: .infinity)
-        .background(Color.black)
-        .offset(y: -34)
+        .background(
+            Color.black
+        )
+        .offset(y: -36)
     }
 }
 

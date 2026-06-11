@@ -37,6 +37,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var notch: DynamicNotch<NotchContentWrapper, GitNotchCompactLeadingView, GitNotchCompactTrailingView>?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Présente automatiquement un popup à chaque nouvelle notification.
+        gitHubViewModel.onNewNotification = { [weak self] notif in
+            await self?.presentNotificationAlert(for: notif)
+        }
+
         if let token = authService.getToken() {
             authService.token = token
             authService.isAuthenticated = true
@@ -86,6 +91,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         gitHubViewModel.stopPolling()
+    }
+
+    /// Affiche la notification (même présentation factuelle que la liste) dans le notch.
+    func presentNotificationAlert(for notif: GithubNotification) async {
+        // On pré-charge l'état (ouvert/fermé/fusionné) pour l'afficher dans le popup.
+        let detail = await gitHubViewModel.subjectDetail(for: notif)
+
+        let alert = DynamicNotch(
+            style: .notch(topCornerRadius: 25, bottomCornerRadius: 45),
+            expanded: {
+                NotificationAlertView(notification: notif, detail: detail)
+            },
+            compactLeading: {
+                Image(systemName: notif.icon(detail))
+                    .foregroundStyle(notif.iconColor(detail))
+            },
+            compactTrailing: {
+                Image(systemName: "bell.badge.fill")
+                    .foregroundStyle(.red)
+            }
+        )
+
+        // On ne touche PAS au notch principal (sa boucle de hover tourne en
+        // continu) : manipuler le même notch en concurrence fait fuiter une
+        // continuation. On présente simplement ce popup indépendant.
+        await alert.expand()
+        try? await Task.sleep(for: .seconds(5))
+        await alert.hide()
     }
 }
 

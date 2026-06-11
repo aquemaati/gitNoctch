@@ -28,7 +28,7 @@ struct NotificationsView: View {
                         Button {
                             Task { await gitHubViewModel.openNotification(notif) }
                         } label: {
-                            notifRow(notif)
+                            NotificationRow(notif: notif)
                         }
                         .buttonStyle(.plain)
                     }
@@ -39,27 +39,65 @@ struct NotificationsView: View {
             .padding(.bottom, 8)
         }
     }
+}
 
-    func notifRow(_ notif: GithubNotification) -> some View {
+/// Ligne factuelle d'une notification. Charge l'état (ouvert/fermé/fusionné)
+/// du sujet pour afficher l'icône, la couleur et le libellé corrects.
+private struct NotificationRow: View {
+    @Environment(GitHubViewModel.self) private var gitHubViewModel
+    let notif: GithubNotification
+    @State private var detail: NotificationSubjectDetail?
+
+    var body: some View {
         HStack(spacing: 10) {
-            // Icône représentant la raison de la notification
-            Image(systemName: notif.icon())
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(notif.iconColor())
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(notif.iconColor().opacity(0.18)))
+            // Icône GitHub colorée selon le type et l'état
+            Image(systemName: notif.icon(detail))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(notif.iconColor(detail))
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(notif.iconColor(detail).opacity(0.2)))
+                .overlay(Circle().stroke(notif.iconColor(detail).opacity(0.4), lineWidth: 1))
 
-            // Titre + date
-            VStack(alignment: .leading, spacing: 1) {
+            // Titre factuel + détails
+            VStack(alignment: .leading, spacing: 2) {
                 Text(notif.subject.title)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(notif.unread ? 0.95 : 0.6))
                     .lineLimit(1)
 
-                Text("\(notif.subject.type) · \(timeAgo(notif.updatedAt))")
-                    .font(.system(size: 9, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    // Pastille d'état (Ouverte / Fermée / Fusionnée…)
+                    if let status = notif.statusLabel(detail) {
+                        Text(status)
+                            .font(.system(size: 8, weight: .semibold, design: .rounded))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(notif.iconColor(detail).opacity(0.25)))
+                            .foregroundStyle(notif.iconColor(detail))
+                    }
+
+                    // Pastille raison (masquée si peu utile, ex. abonnement)
+                    if let badge = notif.reasonBadge {
+                        Text(badge)
+                            .foregroundStyle(.white.opacity(0.45))
+                    }
+
+                    if let repo = notif.repoName {
+                        Text(repo)
+                            .foregroundStyle(.white.opacity(0.5))
+                            .lineLimit(1)
+                    }
+
+                    if let number = notif.subjectNumber {
+                        Text(number)
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+
+                    Text(notif.timeAgo())
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+                .font(.system(size: 9, design: .rounded))
+                .lineLimit(1)
             }
 
             Spacer()
@@ -72,16 +110,16 @@ struct NotificationsView: View {
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 5)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(.white.opacity(notif.unread ? 0.06 : 0.02))
         )
-    }
-
-    private func timeAgo(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        .task {
+            // Charge l'état du sujet (issue/PR) pour enrichir l'affichage.
+            if detail == nil {
+                detail = await gitHubViewModel.subjectDetail(for: notif)
+            }
+        }
     }
 }

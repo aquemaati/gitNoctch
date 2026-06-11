@@ -211,6 +211,27 @@ class GitHubService {
         return nil
     }
 
+    /// Récupère l'état (ouvert/fermé/fusionné) d'une issue ou PR via l'URL du subject.
+    func fetchSubjectDetail(url: String) async -> NotificationSubjectDetail? {
+        guard let token = authService.token, let url = URL(string: url) else { return nil }
+
+        var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 10)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else { return nil }
+            return try JSONDecoder().decode(NotificationSubjectDetail.self, from: data)
+        } catch {
+            print("Erreur fetchSubjectDetail : \(error)")
+            return nil
+        }
+    }
+
     func fetchNotificationHtmlUrl(_ apiUrl: String) async -> String? {
         guard let token = authService.token else { return nil }
         guard let url = URL(string: apiUrl) else { return nil }
