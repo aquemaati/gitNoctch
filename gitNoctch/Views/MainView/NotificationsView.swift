@@ -46,7 +46,11 @@ struct NotificationsView: View {
 private struct NotificationRow: View {
     @Environment(GitHubViewModel.self) private var gitHubViewModel
     let notif: GithubNotification
-    @State private var detail: NotificationSubjectDetail?
+
+    /// État lu depuis le ViewModel (rafraîchi à chaque poll), jamais figé.
+    private var detail: NotificationSubjectDetail? {
+        gitHubViewModel.subjectDetails[notif.id]
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -115,11 +119,5 @@ private struct NotificationRow: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(.white.opacity(notif.unread ? 0.06 : 0.02))
         )
-        .task {
-            // Charge l'état du sujet (issue/PR) pour enrichir l'affichage.
-            if detail == nil {
-                detail = await gitHubViewModel.subjectDetail(for: notif)
-            }
-        }
     }
 }

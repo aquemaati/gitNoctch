@@ -181,7 +181,16 @@ class GitHubService {
     func fetchNotifications() async -> [GithubNotification]? {
         guard let token = authService.token else { return nil }
 
-        let url = baseURL.appendingPathComponent("notifications")
+        var components = URLComponents(
+            url: baseURL.appendingPathComponent("notifications"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "all", value: "false"),       // seulement les non lues
+            URLQueryItem(name: "per_page", value: "50")
+        ]
+        guard let url = components?.url else { return nil }
+
         var request = URLRequest(
             url: url,
             cachePolicy: .reloadIgnoringLocalCacheData,
@@ -189,6 +198,8 @@ class GitHubService {
         )
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
 
         do {
             let (data, response) = try await URLSession.shared.data(
@@ -204,31 +215,139 @@ class GitHubService {
 
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode([GithubNotification].self, from: data)
+            // Décodage tolérant : un élément invalide ne fait pas échouer tout le tableau.
+            let items = try decoder.decode([FailableDecodable<GithubNotification>].self, from: data)
+            return items.compactMap(\.value)
         } catch {
             print("Erreur notifications : \(error)")
         }
         return nil
     }
 
-    /// Récupère l'état (ouvert/fermé/fusionné) d'une issue ou PR via l'URL du subject.
-    func fetchSubjectDetail(url: String) async -> NotificationSubjectDetail? {
-        guard let token = authService.token, let url = URL(string: url) else { return nil }
-
-        var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 10)
+    /// Marque un fil de notification comme lu côté GitHub.
+    func markNotificationAsRead(id: String) async {
+        guard let token = authService.token else { return }
+        let url = baseURL.appendingPathComponent("notifications/threads/\(id)")
+        var request = URLRequest(url: url)
+        request.httpMethod = "PATCH"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("gitNotch/1.0", forHTTPHeaderField: "User-Agent")
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("2022-11-28", forHTTPHeaderField: "X-GitHub-Api-Version")
+        _ = try? await session.data(for: request)
+    }
 
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let http = response as? HTTPURLResponse,
-                  (200...299).contains(http.statusCode) else { return nil }
-            return try JSONDecoder().decode(NotificationSubjectDetail.self, from: data)
-        } catch {
-            print("Erreur fetchSubjectDetail : \(error)")
+    /// Récupère l'état de plusieurs issues/PR en UNE seule requête GraphQL (alias).
+    /// - Parameter items: (id de notification, owner, repo, numéro).
+    /// - Returns: dictionnaire [id de notification : état].
+    func fetchSubjectStates(
+        for items: [(id: String, owner: String, repo: String, number: Int)]
+    ) async -> [String: NotificationSubjectDetail] {
+        guard !items.isEmpty else { return [:] }
+
+        var fields = ""
+        for (i, item) in items.enumerated() {
+            fields += """
+            a\(i): repository(owner: "\(item.owner)", name: "\(item.repo)") {
+              issueOrPullRequest(number: \(item.number)) {
+                __typename
+                ... on Issue { state stateReason }
+                ... on PullRequest { state isDraft }
+              }
+            }
+
+            """
+        }
+        let query = "{\n\(fields)}"
+
+        guard let data = await fetchGraphQL(query: query),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let dataObj = json["data"] as? [String: Any] else { return [:] }
+
+        var results: [String: NotificationSubjectDetail] = [:]
+        for (i, item) in items.enumerated() {
+            guard let repoObj = dataObj["a\(i)"] as? [String: Any],
+                  let node = repoObj["issueOrPullRequest"] as? [String: Any] else { continue }
+            if let detail = Self.parseSubjectNode(node) {
+                results[item.id] = detail
+            }
+        }
+        return results
+    }
+
+    /// Convertit un nœud GraphQL `issueOrPullRequest` en `NotificationSubjectDetail`.
+    private static func parseSubjectNode(_ node: [String: Any]) -> NotificationSubjectDetail? {
+        let typename = node["__typename"] as? String
+        let state = (node["state"] as? String)?.lowercased()   // "open"/"closed"/"merged"
+        if typename == "PullRequest" {
+            return NotificationSubjectDetail(
+                state: state == "open" ? "open" : "closed",
+                merged: state == "merged",
+                draft: node["isDraft"] as? Bool,
+                stateReason: nil
+            )
+        } else if typename == "Issue" {
+            return NotificationSubjectDetail(
+                state: state,
+                merged: nil,
+                draft: nil,
+                stateReason: (node["stateReason"] as? String)?.lowercased()
+            )
+        }
+        return nil
+    }
+
+    /// Récupère l'état (ouvert/fermé/fusionné/brouillon) d'une issue ou PR via GraphQL.
+    func fetchSubjectState(owner: String, repo: String, number: Int) async -> NotificationSubjectDetail? {
+        let query = """
+        {
+          repository(owner: "\(owner)", name: "\(repo)") {
+            issueOrPullRequest(number: \(number)) {
+              __typename
+              ... on Issue { state stateReason }
+              ... on PullRequest { state isDraft }
+            }
+          }
+        }
+        """
+
+        guard let data = await fetchGraphQL(query: query) else { return nil }
+
+        struct Response: Decodable {
+            struct DataField: Decodable {
+                struct Repo: Decodable {
+                    let issueOrPullRequest: Node?
+                }
+                let repository: Repo?
+            }
+            struct Node: Decodable {
+                let __typename: String
+                let state: String?
+                let stateReason: String?
+                let isDraft: Bool?
+            }
+            let data: DataField?
+        }
+
+        guard let node = try? JSONDecoder().decode(Response.self, from: data).data?.repository?.issueOrPullRequest else {
             return nil
+        }
+
+        let state = node.state?.lowercased()   // "open" / "closed" / "merged"
+        if node.__typename == "PullRequest" {
+            return NotificationSubjectDetail(
+                state: state == "open" ? "open" : "closed",
+                merged: state == "merged",
+                draft: node.isDraft,
+                stateReason: nil
+            )
+        } else {
+            return NotificationSubjectDetail(
+                state: state,
+                merged: nil,
+                draft: nil,
+                stateReason: node.stateReason?.lowercased()   // "completed" / "not_planned"
+            )
         }
     }
 

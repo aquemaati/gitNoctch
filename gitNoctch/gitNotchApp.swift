@@ -101,7 +101,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let alert = DynamicNotch(
             style: .notch(topCornerRadius: 25, bottomCornerRadius: 45),
             expanded: {
-                NotificationAlertView(notification: notif, detail: detail)
+                NotificationAlertView(notification: notif, detail: detail) { [weak self] in
+                    // Clic sur le popup → ouvre la page GitHub correspondante.
+                    Task { await self?.gitHubViewModel.openNotification(notif) }
+                }
             },
             compactLeading: {
                 Image(systemName: notif.icon(detail))

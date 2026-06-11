@@ -19,7 +19,7 @@ struct GithubNotification: Codable{
     struct Subject: Codable {
         let type: String
         let title: String
-        let url: String
+        let url: String?   // nul pour certains types (Discussion, CheckSuite…)
     }
 
     struct Repository: Codable {
@@ -42,11 +42,23 @@ struct GithubNotification: Codable{
     /// "owner/repo" du dépôt concerné, si disponible.
     var repoName: String? { repository?.fullName }
 
-    /// Numéro d'issue/PR extrait de l'URL du subject (ex. "#5"), si présent.
+    /// Numéro d'issue/PR (valeur entière) extrait de l'URL du subject.
+    var subjectNumberValue: Int? {
+        guard let url = subject.url,
+              let last = url.split(separator: "/").last else { return nil }
+        return Int(last)
+    }
+
+    /// Numéro d'issue/PR formaté (ex. "#5"), si présent.
     var subjectNumber: String? {
-        guard let number = subject.url.split(separator: "/").last,
-              Int(number) != nil else { return nil }
+        guard let number = subjectNumberValue else { return nil }
         return "#\(number)"
+    }
+
+    /// "owner" et "repo" séparés, dérivés de `repoName`.
+    var ownerAndRepo: (owner: String, repo: String)? {
+        guard let parts = repository?.fullName.split(separator: "/"), parts.count == 2 else { return nil }
+        return (String(parts[0]), String(parts[1]))
     }
 
     /// Libellé court "il y a X" basé sur updatedAt.
@@ -67,15 +79,15 @@ struct GithubNotification: Codable{
     /// Description lisible de la raison.
     func reasonText() -> String {
         switch reason {
-        case "review_requested": return "Revue demandée"
+        case "review_requested": return "Review requested"
         case "mention": return "Mention"
-        case "assign": return "Assignation"
-        case "security_alert": return "Alerte sécurité"
-        case "push": return "Nouveau commit"
-        case "state_change": return "Changement d'état"
-        case "subscribed": return "Abonnement"
-        case "comment": return "Commentaire"
-        default: return reason.capitalized
+        case "assign": return "Assigned"
+        case "security_alert": return "Security alert"
+        case "push": return "New commit"
+        case "state_change": return "State change"
+        case "subscribed": return "Subscribed"
+        case "comment": return "Comment"
+        default: return reason.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }
     
@@ -130,25 +142,36 @@ struct GithubNotification: Codable{
         }
     }
 
-    /// Libellé d'état lisible ("Ouverte", "Fermée", "Fusionnée"…) si pertinent.
+    /// Readable status label ("Open", "Closed", "Merged"…) when relevant.
     func statusLabel(_ detail: NotificationSubjectDetail?) -> String? {
         guard let detail else { return nil }
         switch subject.type {
         case "Issue":
             guard let state = detail.state else { return nil }
             if state == "closed" {
-                return detail.stateReason == "not_planned" ? "Fermée" : "Résolue"
+                return detail.stateReason == "not_planned" ? "Closed" : "Resolved"
             }
-            return "Ouverte"
+            return "Open"
         case "PullRequest":
-            if detail.merged == true { return "Fusionnée" }
+            if detail.merged == true { return "Merged" }
             guard let state = detail.state else { return nil }
-            if state == "closed" { return "Fermée" }
-            if detail.draft == true { return "Brouillon" }
-            return "Ouverte"
+            if state == "closed" { return "Closed" }
+            if detail.draft == true { return "Draft" }
+            return "Open"
         default:
             return nil
         }
+    }
+}
+
+/// Enveloppe de décodage tolérante : si l'élément échoue à décoder, `value` est nil
+/// au lieu de faire échouer le décodage de tout le tableau.
+struct FailableDecodable<T: Decodable>: Decodable {
+    let value: T?
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        value = try? container.decode(T.self)
     }
 }
 

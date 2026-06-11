@@ -12,8 +12,16 @@ import SwiftUI
 struct NotificationAlertView: View {
     let notification: GithubNotification
     let detail: NotificationSubjectDetail?
+    var onTap: () -> Void = {}
 
     var body: some View {
+        Button(action: onTap) {
+            content
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var content: some View {
         HStack(spacing: 12) {
             // Badge icône coloré selon le type et l'état
             ZStack {

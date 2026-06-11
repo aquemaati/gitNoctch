@@ -24,8 +24,9 @@ class GitHubViewModel {
     /// Cache des messages de commit par identifiant d'événement (évite de re-fetch).
     private var commitMessages: [String: String] = [:]
 
-    /// Identifiants de notifications déjà vues (pour détecter les nouvelles).
-    private var seenNotificationIDs: Set<String> = []
+    /// Dernière date `updatedAt` vue par fil de notification (pour détecter les nouveautés,
+    /// même quand GitHub réutilise le même id pour un nouvel événement, ex. clôture d'issue).
+    private var seenNotificationDates: [String: Date] = [:]
     private var didSeedNotifications = false
 
     /// Appelé quand une nouvelle notification non lue est détectée lors d'un poll.
@@ -45,7 +46,7 @@ class GitHubViewModel {
         pollingTask = Task {
             while !Task.isCancelled {
                 await fetchAll()
-                try? await Task.sleep(for: .seconds(60))
+                try? await Task.sleep(for: .seconds(20))
             }
         }
     }
@@ -91,23 +92,49 @@ class GitHubViewModel {
             self.isLoading = false
         }
         await detectNewNotifications(fetchedNotifs)
+        await refreshSubjectDetails(for: fetchedNotifs)
         print("fetchAll done — events: \(fetchedEvents.count)")
+    }
+
+    /// Rafraîchit l'état (ouvert/fermé/fusionné) de toutes les notifications à chaque poll,
+    /// pour éviter d'afficher un statut périmé (le fil GitHub réutilise le même id).
+    private func refreshSubjectDetails(for notifs: [GithubNotification]) async {
+        let items: [(id: String, owner: String, repo: String, number: Int)] = notifs.compactMap { notif in
+            guard let (owner, repo) = notif.ownerAndRepo,
+                  let number = notif.subjectNumberValue else { return nil }
+            return (notif.id, owner, repo, number)
+        }
+        guard !items.isEmpty else {
+            await MainActor.run { self.subjectDetails = [:] }
+            return
+        }
+
+        // Une seule requête GraphQL groupée pour tous les sujets.
+        let results = await gitHubService.fetchSubjectStates(for: items)
+        await MainActor.run { self.subjectDetails = results }
     }
 
     /// Détecte les notifications non lues apparues depuis le dernier poll et
     /// déclenche `onNewNotification` pour la plus récente (évite le spam).
     private func detectNewNotifications(_ notifs: [GithubNotification]) async {
-        let currentIDs = Set(notifs.map(\.id))
-
-        // Premier chargement : on mémorise sans alerter.
+        // Premier chargement : on mémorise les dates sans alerter.
         guard didSeedNotifications else {
             didSeedNotifications = true
-            seenNotificationIDs = currentIDs
+            for notif in notifs { seenNotificationDates[notif.id] = notif.updatedAt }
             return
         }
 
-        let newOnes = notifs.filter { $0.unread && !seenNotificationIDs.contains($0.id) }
-        seenNotificationIDs.formUnion(currentIDs)
+        // Nouveau = non lu ET (jamais vu OU date d'activité plus récente que la dernière vue).
+        // Détecte aussi les nouveaux événements sur un fil existant (ex. clôture d'issue).
+        let newOnes = notifs.filter { notif in
+            guard notif.unread else { return false }
+            if let lastSeen = seenNotificationDates[notif.id] {
+                return notif.updatedAt > lastSeen
+            }
+            return true
+        }
+
+        for notif in notifs { seenNotificationDates[notif.id] = notif.updatedAt }
 
         if let latest = newOnes.sorted(by: { $0.updatedAt > $1.updatedAt }).first {
             await onNewNotification?(latest)
@@ -144,20 +171,30 @@ class GitHubViewModel {
 
     // MARK: - Notifications
     /// Cache des détails d'état (ouvert/fermé/fusionné) par identifiant de notification.
-    private var subjectDetailsCache: [String: NotificationSubjectDetail] = [:]
+    /// État (ouvert/fermé/fusionné) par identifiant de notification, rafraîchi à chaque poll.
+    var subjectDetails: [String: NotificationSubjectDetail] = [:]
 
-    /// Récupère (avec cache) l'état du sujet d'une notification.
+    /// Récupère l'état frais du sujet d'une notification via GraphQL (utilisé par le popup).
     func subjectDetail(for notif: GithubNotification) async -> NotificationSubjectDetail? {
-        if let cached = subjectDetailsCache[notif.id] { return cached }
-        guard let detail = await gitHubService.fetchSubjectDetail(url: notif.subject.url) else { return nil }
-        await MainActor.run { self.subjectDetailsCache[notif.id] = detail }
+        guard let (owner, repo) = notif.ownerAndRepo,
+              let number = notif.subjectNumberValue,
+              let detail = await gitHubService.fetchSubjectState(owner: owner, repo: repo, number: number) else { return nil }
+        await MainActor.run { self.subjectDetails[notif.id] = detail }
         return detail
     }
 
     func openNotification(_ notif: GithubNotification) async {
-        let subjectUrl = notif.subject.url
-        guard let htmlUrl = await gitHubService.fetchNotificationHtmlUrl(subjectUrl),
-              let url = URL(string: htmlUrl) else { return }
-        NSWorkspace.shared.open(url)
+        // Ouvre la page GitHub correspondante.
+        if let subjectUrl = notif.subject.url,
+           let htmlUrl = await gitHubService.fetchNotificationHtmlUrl(subjectUrl),
+           let url = URL(string: htmlUrl) {
+            NSWorkspace.shared.open(url)
+        }
+
+        // Marque comme lue côté GitHub + mise à jour optimiste immédiate de l'UI.
+        await gitHubService.markNotificationAsRead(id: notif.id)
+        await MainActor.run {
+            self.notifications.removeAll { $0.id == notif.id }
+        }
     }
 }

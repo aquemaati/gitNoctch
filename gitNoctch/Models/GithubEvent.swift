@@ -73,14 +73,14 @@ struct GithubEvent: Codable {
         case "PushEvent":
             let branch = payload?.branchName() ?? "main"
             let sha = payload?.shortHead() ?? ""
-            return "\(sha) sur \(branch) — \(repo.name)"
-        case "PullRequestEvent": return "PR sur \(repo.name)"
-        case "IssuesEvent": return "Issue sur \(repo.name)"
-        case "IssueCommentEvent": return "Commentaire sur \(repo.name)"
-        case "CreateEvent": return "Création sur \(repo.name)"
-        case "ForkEvent": return "Fork de \(repo.name)"
+            return "\(sha) on \(branch) — \(repo.name)"
+        case "PullRequestEvent": return "PR on \(repo.name)"
+        case "IssuesEvent": return "Issue on \(repo.name)"
+        case "IssueCommentEvent": return "Comment on \(repo.name)"
+        case "CreateEvent": return "Created on \(repo.name)"
+        case "ForkEvent": return "Fork of \(repo.name)"
         case "WatchEvent": return "Watch \(repo.name)"
-        default: return "Activité sur \(repo.name)"
+        default: return "Activity on \(repo.name)"
         }
     }
     func iconColor() -> Color {
